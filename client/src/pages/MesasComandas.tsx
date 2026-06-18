@@ -995,7 +995,7 @@ export default function MesasComandas() {
     return (
       <AdminLayout>
         <div className="p-4 sm:p-6">
-        <div className="mb-6">
+        <div className="hidden md:block mb-6">
           <PageHeader 
             title="Mapa de mesas" 
             description="Visualização e controle das mesas do salão"
@@ -1090,7 +1090,7 @@ export default function MesasComandas() {
   return (
     <AdminLayout>
       <div className="p-4 sm:p-6">
-      <div className="mb-6">
+      <div className="hidden md:block mb-6">
         <PageHeader 
           title="Mapa de mesas" 
           description="Visualização e controle das mesas do salão"

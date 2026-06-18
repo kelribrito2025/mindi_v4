@@ -1450,6 +1450,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   // Sidebar width based on collapsed state
   const sidebarWidth = sidebarCollapsed ? "w-[63px]" : "w-[263px]";
   const mainPadding = sidebarCollapsed ? "md:pl-[63px]" : "md:pl-[263px]";
+  const mobileTopbarTitle = location === '/mesas' || location.startsWith('/mesas/') ? "Mapa de mesas" : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -2247,13 +2248,21 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         <header className="sticky top-0 z-30 h-[58px] bg-card/80 backdrop-blur-md border-b border-border/50">
           <div className="flex items-center justify-between h-full px-3 md:px-6">
             {/* Left side */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 min-w-0">
               <button
                 onClick={() => { setSidebarCollapsed(false); setSidebarOpen(true); }}
-                className="md:hidden p-2 hover:bg-accent rounded-lg transition-colors"
+                className="md:hidden p-2 hover:bg-accent rounded-lg transition-colors flex-shrink-0"
               >
                 <Menu className="h-4 w-4" />
               </button>
+
+              {mobileTopbarTitle && (
+                <div className="md:hidden min-w-0">
+                  <span className="block truncate text-sm font-semibold text-foreground">
+                    {mobileTopbarTitle}
+                  </span>
+                </div>
+              )}
 
               {/* Search - escondido no Banking e Sugestões */}
               <div className={`${location.startsWith('/banking') || location.startsWith('/sugestoes') ? 'hidden' : 'hidden sm:flex'} relative items-center`}>
