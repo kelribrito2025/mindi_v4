@@ -1,0 +1,1 @@
+ALTER TABLE `complementItems` ADD `priceMode` enum('normal','free') DEFAULT 'normal' NOT NULL;

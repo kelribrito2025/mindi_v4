@@ -1,0 +1,1 @@
+ALTER TABLE `printerSettings` MODIFY COLUMN `showDividers` boolean NOT NULL DEFAULT false;

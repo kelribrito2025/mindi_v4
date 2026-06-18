@@ -1,0 +1,1 @@
+CREATE INDEX `idx_orders_est_status_created` ON `orders` (`establishmentId`,`status`,`createdAt`);

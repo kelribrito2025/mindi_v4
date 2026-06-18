@@ -1,0 +1,1 @@
+ALTER TABLE `establishments` ADD `timezone` varchar(100) DEFAULT 'America/Sao_Paulo' NOT NULL;

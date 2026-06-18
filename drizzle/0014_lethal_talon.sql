@@ -1,0 +1,1 @@
+ALTER TABLE `reviews` ADD `customerPhone` varchar(30) NOT NULL;

@@ -1,0 +1,1 @@
+ALTER TABLE `whatsappConfig` MODIFY COLUMN `notifyOnReservation` boolean NOT NULL DEFAULT true;

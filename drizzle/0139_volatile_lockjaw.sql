@@ -1,0 +1,1 @@
+ALTER TABLE `whatsappConfig` ADD `webhookSecret` varchar(128);

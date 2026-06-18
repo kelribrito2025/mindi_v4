@@ -1,0 +1,1 @@
+ALTER TABLE `comboGroupItems` ADD `isActive` boolean DEFAULT true NOT NULL;

@@ -1,0 +1,1 @@
+ALTER TABLE `changelog_entries` ADD `image_url` text;

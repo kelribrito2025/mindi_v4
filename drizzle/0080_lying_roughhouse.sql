@@ -1,0 +1,1 @@
+ALTER TABLE `establishments` ADD `ownerDisplayName` varchar(11);

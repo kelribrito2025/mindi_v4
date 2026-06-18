@@ -1,0 +1,1 @@
+ALTER TABLE `establishments` ADD `autoAcceptOrders` boolean DEFAULT false NOT NULL;

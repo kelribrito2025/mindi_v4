@@ -1,0 +1,1 @@
+ALTER TABLE `establishments` ADD `smsEnabled` boolean DEFAULT false NOT NULL;

@@ -1,0 +1,1 @@
+ALTER TABLE `establishments` ADD `whatsappBotEnabled` boolean DEFAULT false NOT NULL;

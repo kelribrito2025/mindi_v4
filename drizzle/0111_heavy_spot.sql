@@ -1,0 +1,1 @@
+ALTER TABLE `establishments` ADD `deliveryFinisher` enum('attendant','driver') DEFAULT 'attendant' NOT NULL;

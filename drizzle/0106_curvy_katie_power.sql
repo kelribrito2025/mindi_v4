@@ -1,0 +1,1 @@
+ALTER TABLE `printerSettings` MODIFY COLUMN `defaultPrintMethod` enum('normal','android','automatic') NOT NULL DEFAULT 'normal';

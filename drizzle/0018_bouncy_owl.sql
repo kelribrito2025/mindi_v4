@@ -1,0 +1,1 @@
+ALTER TABLE `establishments` ADD `noteExpiresAt` timestamp;

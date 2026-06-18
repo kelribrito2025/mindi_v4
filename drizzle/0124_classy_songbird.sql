@@ -1,0 +1,1 @@
+ALTER TABLE `stories` ADD `priceBadgeStyle` enum('circle','ribbon','top-center') DEFAULT 'circle';

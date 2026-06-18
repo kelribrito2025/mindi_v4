@@ -1,0 +1,1 @@
+ALTER TABLE `establishments` MODIFY COLUMN `planType` enum('trial','free','lite','basic','pro','enterprise') NOT NULL DEFAULT 'trial';

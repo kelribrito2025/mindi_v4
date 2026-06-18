@@ -1,0 +1,1 @@
+ALTER TABLE `establishments` ADD `pixKey` varchar(255);

@@ -1,0 +1,1 @@
+ALTER TABLE `sms_transactions` ADD `stripePaymentIntentId` varchar(255);

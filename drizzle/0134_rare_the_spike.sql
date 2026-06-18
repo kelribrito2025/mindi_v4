@@ -1,0 +1,1 @@
+ALTER TABLE `drivers` MODIFY COLUMN `repasseStrategy` enum('none','neighborhood','fixed','percentage') NOT NULL DEFAULT 'neighborhood';

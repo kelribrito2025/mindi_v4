@@ -1,0 +1,1 @@
+ALTER TABLE `establishments` ADD `serviceChargePercent` decimal(5,2) DEFAULT '0' NOT NULL;

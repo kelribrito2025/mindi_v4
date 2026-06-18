@@ -1,0 +1,1 @@
+ALTER TABLE `printerSettings` ADD `beepOnPrint` boolean DEFAULT false NOT NULL;

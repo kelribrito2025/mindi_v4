@@ -1,0 +1,1 @@
+ALTER TABLE `complementItems` ADD `description` text;

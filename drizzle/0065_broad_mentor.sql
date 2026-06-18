@@ -1,0 +1,2 @@
+ALTER TABLE `scheduled_campaigns` MODIFY COLUMN `costPerSms` decimal(10,4) NOT NULL DEFAULT '0.097';--> statement-breakpoint
+ALTER TABLE `sms_balance` MODIFY COLUMN `costPerSms` decimal(10,4) NOT NULL DEFAULT '0.0970';

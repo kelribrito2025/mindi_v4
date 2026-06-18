@@ -1,0 +1,21 @@
+CREATE TABLE `coupons` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`establishmentId` int NOT NULL,
+	`code` varchar(15) NOT NULL,
+	`type` enum('percentage','fixed') NOT NULL DEFAULT 'percentage',
+	`value` decimal(10,2) NOT NULL,
+	`maxDiscount` decimal(10,2),
+	`minOrderValue` decimal(10,2),
+	`quantity` int,
+	`usedCount` int NOT NULL DEFAULT 0,
+	`startDate` timestamp,
+	`endDate` timestamp,
+	`activeDays` json,
+	`validOrigins` json,
+	`startTime` varchar(5),
+	`endTime` varchar(5),
+	`status` enum('active','inactive','expired','exhausted') NOT NULL DEFAULT 'active',
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `coupons_id` PRIMARY KEY(`id`)
+);

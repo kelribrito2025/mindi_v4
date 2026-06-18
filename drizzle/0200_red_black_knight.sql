@@ -1,0 +1,2 @@
+ALTER TABLE `complementGroups` ADD `groupType` enum('complement','included') DEFAULT 'complement' NOT NULL;--> statement-breakpoint
+ALTER TABLE `neighborhoodFees` ADD `pinned` boolean DEFAULT false NOT NULL;

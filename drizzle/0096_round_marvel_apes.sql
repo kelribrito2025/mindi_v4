@@ -1,0 +1,1 @@
+ALTER TABLE `printerSettings` ADD `printerApiKey` varchar(64);

@@ -1,0 +1,1 @@
+ALTER TABLE `loyaltyCards` ADD `activeCouponIds` json;

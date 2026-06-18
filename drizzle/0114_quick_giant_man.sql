@@ -1,0 +1,1 @@
+ALTER TABLE `feedbacks` MODIFY COLUMN `type` enum('bug','suggestion','question','other','praise') NOT NULL DEFAULT 'suggestion';

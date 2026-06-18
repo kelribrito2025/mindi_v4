@@ -1,0 +1,1 @@
+ALTER TABLE `printerSettings` ADD `htmlPrintEnabled` boolean DEFAULT true NOT NULL;

@@ -1,0 +1,1 @@
+ALTER TABLE `changelog_versions` ADD `image_url` text;

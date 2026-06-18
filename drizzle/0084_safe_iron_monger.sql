@@ -1,0 +1,1 @@
+ALTER TABLE `complementGroups` ADD `isActive` boolean DEFAULT true NOT NULL;

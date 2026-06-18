@@ -1,0 +1,1 @@
+ALTER TABLE `drivers` ADD `departureNotifyBy` enum('driver','attendant') DEFAULT 'driver' NOT NULL;

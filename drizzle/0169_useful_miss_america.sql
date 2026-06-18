@@ -1,0 +1,1 @@
+ALTER TABLE `plan_prices` ADD `displayName` varchar(100);

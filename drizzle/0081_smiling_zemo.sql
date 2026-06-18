@@ -1,0 +1,1 @@
+ALTER TABLE `stockItems` ADD `linkedProductId` int;

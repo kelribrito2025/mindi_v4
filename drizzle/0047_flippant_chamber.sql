@@ -1,0 +1,1 @@
+ALTER TABLE `orders` MODIFY COLUMN `deliveryType` enum('delivery','pickup','dine_in') NOT NULL DEFAULT 'delivery';

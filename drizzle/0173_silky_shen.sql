@@ -1,0 +1,1 @@
+ALTER TABLE `pdv_customers` ADD `notes` text;

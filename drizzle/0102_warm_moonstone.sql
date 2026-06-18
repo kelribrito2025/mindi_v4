@@ -1,0 +1,1 @@
+ALTER TABLE `botApiKeys` MODIFY COLUMN `apiKey` varchar(128) NOT NULL;

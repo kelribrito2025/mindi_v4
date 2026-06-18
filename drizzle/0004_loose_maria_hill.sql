@@ -1,0 +1,1 @@
+ALTER TABLE `establishments` ADD CONSTRAINT `establishments_menuSlug_unique` UNIQUE(`menuSlug`);

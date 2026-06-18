@@ -1,0 +1,1 @@
+ALTER TABLE `loyaltyCards` ADD `registeredByCustomer` boolean DEFAULT false NOT NULL;

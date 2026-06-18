@@ -1,0 +1,1 @@
+ALTER TABLE `orders` ADD `changeAmount` decimal(10,2);

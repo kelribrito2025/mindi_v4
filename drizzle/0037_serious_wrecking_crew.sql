@@ -1,0 +1,1 @@
+ALTER TABLE `printerSettings` ADD `boxPadding` int DEFAULT 12 NOT NULL;

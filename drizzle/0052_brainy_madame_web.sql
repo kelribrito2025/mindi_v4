@@ -1,0 +1,1 @@
+ALTER TABLE `orders` MODIFY COLUMN `source` enum('internal','ifood','rappi','ubereats','pdv') NOT NULL DEFAULT 'internal';

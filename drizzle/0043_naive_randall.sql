@@ -1,0 +1,1 @@
+ALTER TABLE `whatsappConfig` ADD `requireOrderConfirmation` boolean DEFAULT false NOT NULL;

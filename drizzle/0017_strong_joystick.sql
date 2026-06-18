@@ -1,0 +1,1 @@
+ALTER TABLE `establishments` ADD `noteStyle` varchar(50) DEFAULT 'default';

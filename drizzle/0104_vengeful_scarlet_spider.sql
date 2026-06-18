@@ -1,0 +1,1 @@
+ALTER TABLE `botApiKeys` ADD `isGlobal` boolean DEFAULT false NOT NULL;

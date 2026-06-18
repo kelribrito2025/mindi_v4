@@ -1,0 +1,1 @@
+ALTER TABLE `establishments` ADD `prepGoalMinutes` int DEFAULT 30;

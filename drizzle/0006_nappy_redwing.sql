@@ -1,0 +1,1 @@
+ALTER TABLE `establishments` ADD `instagram` varchar(100);

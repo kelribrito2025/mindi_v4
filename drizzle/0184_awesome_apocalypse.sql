@@ -1,0 +1,1 @@
+ALTER TABLE `products` ADD `promotionalPrice` decimal(10,2);

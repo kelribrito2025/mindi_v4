@@ -1,0 +1,1 @@
+ALTER TABLE `establishments` ADD `paytimeCardEnabled` boolean DEFAULT false NOT NULL;

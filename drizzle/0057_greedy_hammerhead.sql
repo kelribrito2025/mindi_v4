@@ -1,0 +1,1 @@
+ALTER TABLE `whatsappConfig` MODIFY COLUMN `notifyOnCompleted` boolean NOT NULL DEFAULT true;

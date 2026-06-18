@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="pt-BR">
+
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=5" />
+    <title>Mindi | Cardápio Digital para Restaurantes</title>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Mindi é a plataforma completa de cardápio digital para restaurantes. Gestão de pedidos, delivery, controle de estoque e programa de fidelidade em um só lugar." />
+    <meta name="keywords" content="cardápio digital, pedidos online, delivery, restaurante, gestão de pedidos, menu digital, sistema para restaurante, Mindi, controle de estoque, programa de fidelidade" />
+    <meta name="theme-color" content="#dc2626" />
+    <meta name="robots" content="index, follow" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Mindi | Cardápio Digital para Restaurantes" />
+    <meta property="og:description" content="Cardápio digital, gestão de pedidos, controle de estoque e muito mais — tudo em uma única plataforma pensada para o seu negócio crescer." />
+    <meta property="og:image" content="https://d2xsxph8kpxj0f.cloudfront.net/310519663232987165/enmWmXpAt34diouyKU4TE2/og-image-mindi_007fe26c.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Mindi | Cardápio Digital para Restaurantes" />
+    <meta name="twitter:description" content="Cardápio digital, gestão de pedidos, controle de estoque e muito mais — tudo em uma única plataforma pensada para o seu negócio crescer." />
+    <meta name="twitter:image" content="https://d2xsxph8kpxj0f.cloudfront.net/310519663232987165/enmWmXpAt34diouyKU4TE2/og-image-mindi_007fe26c.jpg" />
+
+    <!-- PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Cardápio" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- S04: Font loading via <link> em vez de @import no CSS (evita render-blocking) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <!-- S08: Preconnect para CDN de imagens (reduz latência DNS+TLS em ~100-300ms) -->
+    <link rel="preconnect" href="https://d2xsxph8kpxj0f.cloudfront.net" />
+    <link rel="dns-prefetch" href="https://d2xsxph8kpxj0f.cloudfront.net" />
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json?v=20260531oficial" />
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/icons/icon-180x180-20260531oficial.png" />
+    <link rel="apple-touch-icon" sizes="72x72" href="/icons/icon-72x72-20260531oficial.png" />
+    <link rel="apple-touch-icon" sizes="96x96" href="/icons/icon-96x96-20260531oficial.png" />
+    <link rel="apple-touch-icon" sizes="128x128" href="/icons/icon-128x128-20260531oficial.png" />
+    <link rel="apple-touch-icon" sizes="144x144" href="/icons/icon-144x144-20260531oficial.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152-20260531oficial.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180x180-20260531oficial.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192-20260531oficial.png" />
+    <link rel="apple-touch-icon" sizes="384x384" href="/icons/icon-384x384-20260531oficial.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512x512-20260531oficial.png" />
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/icons/mindi-favicon-oficial-20260531.svg" />
+    <link rel="icon" type="image/x-icon" href="/favicon-20260531oficial.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32-20260531oficial.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16-20260531oficial.png" />
+    
+    <!-- Preload auth background image for faster login/register page -->
+    <link rel="preload" as="image" href="https://files.manuscdn.com/user_upload_by_module/session_file/310519663232987165/RGXZrAZifRctLVFg.jpg" />
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <!-- SDK PagSeguro 3DS para antifraude de cartão -->
+    <script defer src="https://assets.pagseguro.com.br/checkout-sdk-js/rc/dist/browser/pagseguro.min.js"></script>
+  </body>
+
+</html>

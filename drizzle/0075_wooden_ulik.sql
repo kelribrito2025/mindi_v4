@@ -1,0 +1,1 @@
+ALTER TABLE `whatsappConfig` ADD `templateReadyPickup` text;

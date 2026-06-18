@@ -1,0 +1,1 @@
+ALTER TABLE `comboGroups` ADD `minQuantity` int DEFAULT 1 NOT NULL;

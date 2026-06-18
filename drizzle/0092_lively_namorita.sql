@@ -1,0 +1,21 @@
+CREATE TABLE `recurringExpenses` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`establishmentId` int NOT NULL,
+	`type` enum('expense','revenue') NOT NULL DEFAULT 'expense',
+	`description` varchar(500) NOT NULL,
+	`categoryId` int NOT NULL,
+	`amount` decimal(10,2) NOT NULL,
+	`paymentMethod` enum('cash','pix','card','transfer') NOT NULL DEFAULT 'cash',
+	`frequency` enum('weekly','monthly','yearly') NOT NULL DEFAULT 'monthly',
+	`executionDay` int NOT NULL,
+	`executionMonth` int,
+	`generateAsPending` boolean NOT NULL DEFAULT false,
+	`startDate` timestamp NOT NULL,
+	`endDate` timestamp,
+	`active` boolean NOT NULL DEFAULT true,
+	`lastGeneratedAt` timestamp,
+	`notes` text,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `recurringExpenses_id` PRIMARY KEY(`id`)
+);

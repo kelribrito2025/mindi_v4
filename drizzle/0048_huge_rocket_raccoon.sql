@@ -1,0 +1,1 @@
+ALTER TABLE `establishments` ADD `allowsDineIn` boolean DEFAULT false NOT NULL;

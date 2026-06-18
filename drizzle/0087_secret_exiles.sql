@@ -1,0 +1,2 @@
+ALTER TABLE `establishments` ADD `driverNotifyTiming` enum('on_accepted','on_ready') DEFAULT 'on_ready' NOT NULL;--> statement-breakpoint
+ALTER TABLE `orders` ADD `deliveryNotified` boolean DEFAULT false NOT NULL;

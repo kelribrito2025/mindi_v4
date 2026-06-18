@@ -1,0 +1,1232 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* Google Fonts - Inter carregado via <link> no index.html (S04: evita render-blocking) */
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  /* Breakpoint personalizado para telas muito pequenas */
+  --breakpoint-xs: 360px;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  /* iFood inspired color palette - Vermelho vibrante como primário */
+  --primary: oklch(0.637 0.237 25.331);
+  --primary-foreground: oklch(0.99 0 0);
+  
+  /* Sidebar escura elegante */
+  --sidebar-primary: oklch(0.637 0.237 25.331);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  
+  /* Charts com gradiente de cores */
+  --chart-1: oklch(0.55 0.22 25);
+  --chart-2: oklch(0.65 0.18 25);
+  --chart-3: oklch(0.50 0.20 145);
+  --chart-4: oklch(0.60 0.15 220);
+  --chart-5: oklch(0.55 0.18 280);
+  
+  /* Radius mais suave */
+  --radius: 0.75rem;
+  
+  /* Background limpo e claro */
+  --background: oklch(0.985 0.002 250);
+  --foreground: oklch(0.15 0.01 250);
+  
+  /* Cards com fundo branco puro */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.15 0.01 250);
+  
+  /* Popover */
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.15 0.01 250);
+  
+  /* Secondary mais suave */
+  --secondary: oklch(0.96 0.005 250);
+  --secondary-foreground: oklch(0.25 0.01 250);
+  
+  /* Muted para textos secundários */
+  --muted: oklch(0.96 0.005 250);
+  --muted-foreground: oklch(0.50 0.01 250);
+  
+  /* Accent sutil */
+  --accent: oklch(0.96 0.005 250);
+  --accent-foreground: oklch(0.25 0.01 250);
+  
+  /* Destructive vermelho */
+  --destructive: oklch(0.55 0.25 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  
+  /* Borders sutis */
+  --border: oklch(0.92 0.005 250);
+  --input: oklch(0.92 0.005 250);
+  --ring: oklch(0.637 0.237 25.331);
+  
+  /* Sidebar elegante cinza claro */
+  --sidebar: oklch(0.97 0.005 250);
+  --sidebar-foreground: oklch(0.25 0.01 250);
+  --sidebar-accent: oklch(0.55 0.22 25);
+  --sidebar-accent-foreground: oklch(0.99 0 0);
+  --sidebar-border: oklch(0.90 0.005 250);
+  --sidebar-ring: oklch(0.55 0.22 25);
+  
+  /* Status colors */
+  --warning: oklch(0.80 0.16 85);
+  --warning-foreground: oklch(0.30 0.08 85);
+  --success: oklch(0.65 0.20 145);
+  --success-foreground: oklch(0.99 0 0);
+  --info: oklch(0.60 0.18 250);
+  --info-foreground: oklch(0.99 0 0);
+}
+
+.dark {
+  --primary: oklch(0.62 0.22 25);
+  --primary-foreground: oklch(0.99 0 0);
+  --sidebar-primary: oklch(0.62 0.22 25);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --background: oklch(0.14 0.005 250);
+  --foreground: oklch(0.93 0.005 250);
+  --card: oklch(0.19 0.006 250);
+  --card-foreground: oklch(0.93 0.005 250);
+  --popover: oklch(0.19 0.006 250);
+  --popover-foreground: oklch(0.93 0.005 250);
+  --secondary: oklch(0.23 0.006 250);
+  --secondary-foreground: oklch(0.88 0.005 250);
+  --muted: oklch(0.22 0.006 250);
+  --muted-foreground: oklch(0.65 0.01 250);
+  --accent: oklch(0.23 0.006 250);
+  --accent-foreground: oklch(0.93 0.005 250);
+  --destructive: oklch(0.60 0.22 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.28 0.006 250);
+  --input: oklch(0.28 0.006 250);
+  --ring: oklch(0.62 0.22 25);
+  --chart-1: oklch(0.62 0.22 25);
+  --chart-2: oklch(0.72 0.16 25);
+  --chart-3: oklch(0.62 0.18 145);
+  --chart-4: oklch(0.65 0.15 220);
+  --chart-5: oklch(0.62 0.16 280);
+  --sidebar: oklch(0.12 0.006 250);
+  --sidebar-foreground: oklch(0.93 0.005 250);
+  --sidebar-accent: oklch(0.23 0.006 250);
+  --sidebar-accent-foreground: oklch(0.99 0 0);
+  --sidebar-border: oklch(0.25 0.006 250);
+  --sidebar-ring: oklch(0.62 0.22 25);
+  
+  /* Status colors - dark mode */
+  --warning: oklch(0.82 0.14 85);
+  --warning-foreground: oklch(0.25 0.06 85);
+  --success: oklch(0.68 0.18 145);
+  --success-foreground: oklch(0.99 0 0);
+  --info: oklch(0.65 0.16 250);
+  --info-foreground: oklch(0.99 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  /* Transição de tema otimizada: aplica apenas em containers principais para evitar lag em páginas grandes */
+  html.theme-transition,
+  html.theme-transition > body {
+    transition: background-color 0.2s ease, color 0.2s ease !important;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  /* MU05: Prevent iOS auto-zoom on input focus (requires font-size >= 16px) */
+  @supports (-webkit-touch-callout: none) {
+    input, select, textarea {
+      font-size: 16px !important;
+    }
+  }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [type="button"]:not(:disabled),
+  [type="submit"]:not(:disabled),
+  [type="reset"]:not(:disabled),
+  a[href],
+  select:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled) {
+    @apply cursor-pointer;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+}
+
+@layer components {
+  .container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .flex {
+    min-height: 0;
+    min-width: 0;
+  }
+
+  @media (min-width: 640px) {
+    .container {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container {
+      padding-left: 2rem;
+      padding-right: 2rem;
+      max-width: 1280px;
+    }
+  }
+
+  /* Card hover effect */
+  .card-hover {
+    @apply transition-all duration-200;
+  }
+  .card-hover:hover {
+    @apply shadow-lg -translate-y-0.5;
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent;
+  }
+
+  /* Glass effect */
+  .glass {
+    @apply bg-white/80 backdrop-blur-sm;
+  }
+  .dark .glass {
+    @apply bg-card/80 backdrop-blur-sm;
+  }
+
+  /* Hide scrollbar */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Show scrollbar on hover (parent container) */
+  .hover-scroll-container:hover .scrollbar-hide {
+    -ms-overflow-style: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgb(200 200 200) transparent;
+  }
+  .hover-scroll-container:hover .scrollbar-hide::-webkit-scrollbar {
+    display: block;
+    height: 6px;
+  }
+  .hover-scroll-container:hover .scrollbar-hide::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .hover-scroll-container:hover .scrollbar-hide::-webkit-scrollbar-thumb {
+    background-color: rgb(200 200 200);
+    border-radius: 3px;
+  }
+
+  /* Subtle shadow */
+  .shadow-subtle {
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+  }
+  .dark .shadow-subtle {
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.2), 0 1px 2px -1px rgb(0 0 0 / 0.15);
+  }
+
+  /* Medium shadow */
+  .shadow-soft {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  }
+  .dark .shadow-soft {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.25), 0 2px 4px -2px rgb(0 0 0 / 0.2);
+  }
+
+  /* Elevated shadow */
+  .shadow-elevated {
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+  }
+  .dark .shadow-elevated {
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.25);
+  }
+}
+
+/* Custom scrollbar - mais sutil */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: oklch(0.85 0 0);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.75 0 0);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: oklch(0.35 0 0);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.45 0 0);
+}
+
+/* Skeleton animation - mais suave */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    oklch(0.96 0 0) 25%,
+    oklch(0.92 0 0) 50%,
+    oklch(0.96 0 0) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.dark .skeleton {
+  background: linear-gradient(
+    90deg,
+    oklch(0.22 0 0) 25%,
+    oklch(0.28 0 0) 50%,
+    oklch(0.22 0 0) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Text shimmer - efeito de brilho que percorre o texto */
+@keyframes text-shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.text-shimmer {
+  background: linear-gradient(
+    90deg,
+    oklch(0.55 0 0) 0%,
+    oklch(0.55 0 0) 35%,
+    oklch(0.75 0.05 80) 50%,
+    oklch(0.55 0 0) 65%,
+    oklch(0.55 0 0) 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: text-shimmer 3s ease-in-out infinite;
+}
+
+.dark .text-shimmer {
+  background: linear-gradient(
+    90deg,
+    oklch(0.65 0 0) 0%,
+    oklch(0.65 0 0) 35%,
+    oklch(0.85 0.05 80) 50%,
+    oklch(0.65 0 0) 65%,
+    oklch(0.65 0 0) 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: text-shimmer 3s ease-in-out infinite;
+}
+
+/* Banner shimmer - efeito de brilho que percorre o card */
+@keyframes banner-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Badge shimmer - efeito de brilho no badge Novo */
+.badge-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.badge-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.6) 50%,
+    transparent 100%
+  );
+  animation: banner-shimmer 2.5s ease-in-out infinite;
+}
+
+/* Pulse animation para notificações */
+@keyframes pulse-dot {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+  }
+}
+
+.pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* Focus ring mais elegante */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2;
+}
+
+/* Transition utilities */
+.transition-smooth {
+  @apply transition-all duration-200 ease-out;
+}
+
+
+/* Animação de float suave para o balão de nota */
+@keyframes float-balloon {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+  }
+  50% {
+    filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.15));
+  }
+}
+
+.animate-float-balloon {
+  animation: float-balloon 3s ease-in-out infinite, pulse-glow 3s ease-in-out infinite;
+}
+
+/* Animação de pulso suave para placeholder de produtos sem foto */
+@keyframes placeholder-pulse {
+  0%, 100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+.animate-placeholder-pulse {
+  animation: placeholder-pulse 2.5s ease-in-out infinite;
+}
+
+/* Animação de balanço suave para ícone de delivery (motocicleta) */
+@keyframes bike-ride {
+  0%, 100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  25% {
+    transform: translateX(1px) rotate(-2deg);
+  }
+  50% {
+    transform: translateX(0) rotate(0deg);
+  }
+  75% {
+    transform: translateX(-1px) rotate(2deg);
+  }
+}
+
+.animate-bike-ride {
+  animation: bike-ride 1.5s ease-in-out infinite;
+}
+
+/* Animação de pulso para container de Delivery/Retirada (mobile) */
+@keyframes delivery-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.3), 0 2px 4px -1px rgba(239, 68, 68, 0.2);
+  }
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 8px 15px -3px rgba(239, 68, 68, 0.4), 0 4px 6px -2px rgba(239, 68, 68, 0.3);
+  }
+}
+
+.animate-delivery-pulse {
+  animation: delivery-pulse 2s ease-in-out infinite;
+}
+
+
+/* Pulse glow discreto para CTA de upgrade no tooltip de período de avaliação */
+@keyframes upgrade-cta-pulse {
+  0%, 100% {
+    box-shadow: 0 4px 10px -4px rgba(239, 68, 68, 0.45), 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+  50% {
+    box-shadow: 0 8px 18px -6px rgba(239, 68, 68, 0.5), 0 0 0 5px rgba(239, 68, 68, 0.14);
+  }
+}
+
+.animate-upgrade-cta-pulse {
+  animation: upgrade-cta-pulse 2.4s ease-in-out infinite;
+  will-change: box-shadow;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-upgrade-cta-pulse {
+    animation: none;
+  }
+}
+
+/* Animação de entrada suave para logo nas páginas de autenticação */
+@keyframes logo-fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-logo-entrance {
+  animation: logo-fade-in 0.6s ease-out forwards;
+}
+
+/* Animação de movimento lateral para indicador de mais categorias */
+@keyframes bounce-x {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+}
+
+.animate-bounce-x {
+  animation: bounce-x 1s ease-in-out infinite;
+}
+
+/* Animação de entrada do menu secundário - deslizando da esquerda */
+@keyframes slide-in-from-left {
+  0% {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-from-left {
+  animation: slide-in-from-left 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+
+/* Animações para a aba (handle) da slidebar PDV */
+@keyframes handle-pulse {
+  0%, 100% {
+    transform: translateY(-50%) translateX(0);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+  50% {
+    transform: translateY(-50%) translateX(-4px);
+    box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.3), 0 4px 6px -2px rgba(239, 68, 68, 0.2);
+  }
+}
+
+.animate-handle-pulse {
+  animation: handle-pulse 2s ease-in-out infinite;
+}
+
+/* Animação de seta pulsando para a esquerda */
+@keyframes arrow-bounce-left {
+  0%, 100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(-3px);
+    opacity: 0.8;
+  }
+}
+
+.animate-arrow-bounce-left {
+  animation: arrow-bounce-left 1.2s ease-in-out infinite;
+}
+
+.animate-arrow-bounce-left-delayed {
+  animation: arrow-bounce-left 1.2s ease-in-out infinite;
+  animation-delay: 0.2s;
+}
+
+
+/* ============ LANDING PAGE HERO ANIMATIONS ============ */
+@keyframes hero-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes hero-float-delayed {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes hero-float-stat {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(1deg);
+  }
+}
+
+@keyframes hero-float-stat-2 {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(-1deg);
+  }
+}
+
+/* Marquee infinite scroll for clients carousel */
+@keyframes marquee-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee-scroll 30s linear infinite;
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.animate-marquee-segments {
+  animation: marquee-scroll 25s linear infinite;
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.animate-marquee-products {
+  animation: marquee-scroll 35s linear infinite;
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.animate-marquee-products:hover {
+  animation-play-state: paused;
+}
+
+
+
+
+
+@keyframes step-unlock {
+  0% {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+  40% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+  60% {
+    transform: scale(0.98);
+  }
+  80% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes onboarding-highlight-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(220, 38, 38, 0.15);
+  }
+}
+
+/* Shimmer effect for free delivery progress text */
+@keyframes shimmer-text {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+.shimmer-text {
+  background: linear-gradient(
+    90deg,
+    currentColor 0%,
+    currentColor 35%,
+    #fbbf24 50%,
+    currentColor 65%,
+    currentColor 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer-text 3s ease-in-out infinite;
+}
+@keyframes shimmer-text-rtl {
+  0% {
+    background-position: 200% center;
+  }
+  100% {
+    background-position: -200% center;
+  }
+}
+.shimmer-text-white {
+  background: linear-gradient(
+    90deg,
+    currentColor 0%,
+    currentColor 35%,
+    #ffffff 50%,
+    currentColor 65%,
+    currentColor 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer-text-rtl 3s ease-in-out infinite;
+}
+.shimmer-text-green {
+  background: linear-gradient(
+    90deg,
+    #15803d 0%,
+    #15803d 35%,
+    #4ade80 50%,
+    #15803d 65%,
+    #15803d 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer-text 2.5s ease-in-out infinite;
+}
+
+/* WhatsApp floating bubbles animations */
+@keyframes fadeSlideLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(40px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes fadeSlideRight {
+  0% {
+    opacity: 0;
+    transform: translateX(-40px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+/* Efeito pulsante leve para card de aviso Importante */
+@keyframes pulse-subtle {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    border-color: rgba(254, 202, 202, 1);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.5);
+  }
+}
+
+@keyframes gift-swing {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  10% {
+    transform: rotate(14deg);
+  }
+  20% {
+    transform: rotate(-12deg);
+  }
+  30% {
+    transform: rotate(10deg);
+  }
+  40% {
+    transform: rotate(-8deg);
+  }
+  50% {
+    transform: rotate(4deg);
+  }
+  60% {
+    transform: rotate(0deg);
+  }
+}
+
+.animate-gift-swing {
+  transform-origin: top center;
+  animation: gift-swing 2.5s ease-in-out infinite;
+  display: inline-block;
+}
+
+@keyframes coin-drop {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  15% {
+    transform: translateY(-3px);
+  }
+  30% {
+    transform: translateY(2px);
+  }
+  40% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-1px);
+  }
+  60% {
+    transform: translateY(0);
+  }
+}
+
+.animate-coin-drop {
+  animation: coin-drop 2.5s ease-in-out infinite;
+  display: inline-block;
+}
+
+@keyframes scale-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.animate-scale-pulse {
+  animation: scale-pulse 2s ease-in-out infinite;
+}
+.animate-scale-pulse:hover {
+  animation: none;
+}
+
+/* ============================================================
+   PagSeguro 3DS SDK - Cardinal Commerce iframe fix
+   ============================================================
+   The PagSeguro SDK (Cardinal Commerce) injects the 3DS challenge
+   iframe directly into <body>, outside of #root. The AdminLayout
+   sidebar uses position:fixed + z-index:50, which creates a
+   stacking context that sits ABOVE body-level children regardless
+   of their z-index (because fixed elements form their own layer).
+
+   The ONLY reliable fix is to completely HIDE the #root element
+   when 3DS is active, so the Cardinal iframe is the sole visible
+   and interactive element on the page.
+   ============================================================ */
+
+/* 1. When 3DS is active: blur and darken the React app.
+      Using filter:blur + opacity creates a nice backdrop effect
+      while pointer-events:none ensures clicks go through to the
+      Cardinal iframe. The #root stays visible but blurred. */
+body[data-threeds-active] {
+  background-color: rgba(0, 0, 0, 0.6) !important;
+}
+
+body[data-threeds-active] > #root {
+  filter: blur(4px) brightness(0.4) !important;
+  pointer-events: none !important;
+  user-select: none !important;
+  transition: filter 0.3s ease !important;
+}
+
+/* 2. The floating cancel/status bar is rendered via a React portal
+      directly into body (outside #root), so it stays visible.
+      Give it explicit positioning and max z-index. */
+body[data-threeds-active] [data-threeds-cancel] {
+  z-index: 2147483647 !important;
+  pointer-events: auto !important;
+}
+
+/* 3. Ensure all Cardinal Commerce elements are on top and interactive */
+body[data-threeds-active] iframe,
+body[data-threeds-active] > div:not(#root) {
+  z-index: 2147483647 !important;
+  pointer-events: auto !important;
+  position: relative;
+}
+
+/* Shimmer effect for iFood badge text */
+@keyframes ifood-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.ifood-shimmer-text {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 1) 0%,
+    rgba(255, 255, 255, 1) 35%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 1) 65%,
+    rgba(255, 255, 255, 1) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: ifood-shimmer 2.5s ease-in-out infinite;
+}
+
+/* Marquee/letreiro effect for long establishment names */
+@keyframes marquee-name {
+  0%, 12% {
+    transform: translateX(0%);
+    opacity: 1;
+  }
+  45% {
+    transform: translateX(-100%);
+    opacity: 1;
+  }
+  46% {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  47% {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  48% {
+    opacity: 1;
+    transform: translateX(100%);
+  }
+  78% {
+    transform: translateX(0%);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0%);
+    opacity: 1;
+  }
+}
+
+.animate-marquee-name {
+  display: inline-block;
+  animation: marquee-name 8s ease-in-out infinite;
+  padding-right: 1rem;
+}
+
+@media (min-width: 768px) {
+  .animate-marquee-name {
+    animation: none;
+    padding-right: 0;
+  }
+}
+
+/* Toast notification custom styling - red gradient */
+[data-sonner-toaster] [data-sonner-toast] [data-close-button] {
+  position: absolute !important;
+  top: 6px !important;
+  right: 6px !important;
+  left: auto !important;
+  transform: none !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+[data-sonner-toaster] [data-sonner-toast] [data-close-button]:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+}
+[data-sonner-toaster] [data-sonner-toast] [data-icon] svg {
+  color: #ffffff !important;
+}
+[data-sonner-toaster] [data-sonner-toast] [data-title],
+[data-sonner-toaster] [data-sonner-toast] [data-description] {
+  color: #ffffff !important;
+}
+[data-sonner-toaster] [data-sonner-toast] [data-button] {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+}
+[data-sonner-toaster] [data-sonner-toast] [data-button]:hover {
+  background: rgba(255, 255, 255, 0.35) !important;
+}
+[data-sonner-toaster] [data-sonner-toast] button[data-action] {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+}
+[data-sonner-toaster] [data-sonner-toast] button[data-action]:hover {
+  background: rgba(255, 255, 255, 0.35) !important;
+}
+
+@keyframes wallet-tilt {
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  20% { transform: rotate(-8deg) translateY(-1px); }
+  40% { transform: rotate(6deg) translateY(0); }
+  60% { transform: rotate(-4deg) translateY(-1px); }
+  80% { transform: rotate(3deg) translateY(0); }
+}
+.animate-wallet-tilt {
+  animation: wallet-tilt 2.4s ease-in-out infinite;
+  transform-origin: 50% 80%;
+  display: inline-block;
+}
+@keyframes wallet-jiggle {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  12% { transform: translateX(-2px) rotate(-5deg); }
+  24% { transform: translateX(2px) rotate(5deg); }
+  36% { transform: translateX(-1px) rotate(-3deg); }
+  48% { transform: translateX(1px) rotate(3deg); }
+  60% { transform: translateX(0) rotate(0deg); }
+}
+.animate-wallet-jiggle {
+  animation: wallet-jiggle 2.2s ease-in-out infinite;
+  transform-origin: center;
+  display: inline-block;
+}
+
+/* ===== Print Receipt Styles ===== */
+.print-receipt-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: white;
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 20px;
+  overflow-y: auto;
+}
+.receipt-container {
+  width: 302px;
+  padding: 20px 16px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #000;
+  background: white;
+}
+.receipt-store-name {
+  text-align: center;
+  font-weight: bold;
+  font-size: 16px;
+}
+.receipt-store-sub {
+  text-align: center;
+  font-size: 11px;
+  color: #333;
+}
+.receipt-divider {
+  border: none;
+  border-top: 1px dashed #000;
+  margin: 10px 0;
+  height: 0;
+}
+.receipt-title {
+  text-align: center;
+  font-weight: bold;
+  font-size: 14px;
+  margin: 8px 0;
+}
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 3px 0;
+  font-size: 12px;
+}
+.receipt-bold {
+  font-weight: bold;
+}
+.receipt-section-title {
+  font-weight: bold;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 8px;
+  margin-bottom: 4px;
+}
+.receipt-total-box {
+  background: #000;
+  color: #fff;
+  padding: 6px 10px;
+  display: flex;
+  justify-content: space-between;
+  font-weight: bold;
+  font-size: 13px;
+  margin: 6px 0;
+}
+.receipt-center {
+  text-align: center;
+}
+.receipt-small {
+  font-size: 10px;
+}
+.receipt-footer {
+  text-align: center;
+  font-size: 10px;
+  color: #666;
+  margin-top: 12px;
+}
+
+/* Hide receipt overlay on screen, only show when printing */
+@media screen {
+  .print-receipt-overlay {
+    /* visible on screen so user can see before print */
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  .print-receipt-overlay,
+  .print-receipt-overlay * {
+    visibility: visible !important;
+  }
+  .print-receipt-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 0;
+  }
+  .receipt-container {
+    margin: 0 auto;
+  }
+  .no-print {
+    display: none !important;
+    visibility: hidden !important;
+  }
+  .receipt-total-box {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

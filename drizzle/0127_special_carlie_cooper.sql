@@ -1,0 +1,1 @@
+ALTER TABLE `establishments` ADD `aiImageCredits` int DEFAULT 15 NOT NULL;

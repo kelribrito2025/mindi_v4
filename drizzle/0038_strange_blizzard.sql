@@ -1,0 +1,1 @@
+ALTER TABLE `printerSettings` ADD `itemBorderStyle` varchar(20) DEFAULT 'rounded' NOT NULL;

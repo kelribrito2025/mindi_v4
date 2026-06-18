@@ -1,0 +1,1 @@
+ALTER TABLE `orders` MODIFY COLUMN `paymentMethod` enum('cash','card','pix','boleto','card_online','pix_online') NOT NULL DEFAULT 'cash';
