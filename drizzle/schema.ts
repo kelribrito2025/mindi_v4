@@ -165,6 +165,8 @@ export const establishments = mysqlTable("establishments", {
   // Avaliações
   ownerDisplayName: varchar("ownerDisplayName", { length: 11 }),
   reviewsEnabled: boolean("reviewsEnabled").default(true).notNull(),
+  // Chat do menu público
+  publicChatEnabled: boolean("publicChatEnabled").default(true).notNull(),
   fakeReviewCount: int("fakeReviewCount").default(355),
   // Agendamento de pedidos
   schedulingEnabled: boolean("schedulingEnabled").default(false).notNull(), // Habilitar agendamento
@@ -196,6 +198,7 @@ export const establishments = mysqlTable("establishments", {
   feePixStatic: decimal("feePixStatic", { precision: 5, scale: 2 }),
   feeCard: decimal("feeCard", { precision: 5, scale: 2 }),
   serviceChargePercent: decimal("serviceChargePercent", { precision: 5, scale: 2 }).default("0").notNull(),
+  serviceChargeDestination: varchar("serviceChargeDestination", { length: 20 }).default("staff"),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => [
   index("idx_establishments_userId").on(table.userId),
@@ -957,6 +960,8 @@ export const tables = mysqlTable("tables", {
   mergedIntoId: int("mergedIntoId"), // ID da mesa principal quando esta mesa foi juntada a outra
   mergedTableIds: text("mergedTableIds"), // JSON array com IDs das mesas que foram juntadas a esta (ex: "[2,3]")
   displayNumber: varchar("displayNumber", { length: 50 }), // Número de exibição para mesas combinadas (ex: "1-3")
+  requestingBillAt: timestamp("requestingBillAt"), // Quando a conta foi solicitada
+  requestingBillBy: varchar("requestingBillBy", { length: 255 }), // Nome de quem solicitou a conta
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => [
@@ -2294,3 +2299,20 @@ export const complementSubstitutions = mysqlTable("complement_substitutions", {
 ]);
 export type ComplementSubstitution = typeof complementSubstitutions.$inferSelect;
 export type InsertComplementSubstitution = typeof complementSubstitutions.$inferInsert;
+
+// ============ SSE CONNECTIVITY LOGS ============
+export const sseConnectivityLogs = mysqlTable("sse_connectivity_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  establishmentId: int("establishment_id").notNull(),
+  event: mysqlEnum("event", ["disconnected", "order_missed", "reconnected"]).notNull(),
+  message: text("message").notNull(),
+  orderId: int("order_id"),
+  details: json("details").$type<Record<string, unknown>>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_sseConnLogs_establishment").on(table.establishmentId),
+  index("idx_sseConnLogs_event").on(table.event),
+  index("idx_sseConnLogs_createdAt").on(table.createdAt),
+]);
+export type SseConnectivityLog = typeof sseConnectivityLogs.$inferSelect;
+export type InsertSseConnectivityLog = typeof sseConnectivityLogs.$inferInsert;

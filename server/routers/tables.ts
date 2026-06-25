@@ -2,6 +2,7 @@ import * as db from "../db";
 import { TRPCError } from "@trpc/server";
 import { assertEstablishmentOwnership } from "./helpers";
 import { logger } from "../_core/logger";
+import { sendEvent } from "../_core/sse";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 
@@ -182,6 +183,7 @@ export const tablesRouter = router({
         if (!establishment) throw new TRPCError({ code: "NOT_FOUND", message: "Estabelecimento não encontrado" });
         
         const result = await db.openTable(establishment.id, input.tableId, input.guests || 1);
+        sendEvent(establishment.id, "table_updated", { tableId: input.tableId, action: "open" });
         return result;
       }),
 
@@ -198,7 +200,35 @@ export const tablesRouter = router({
         if (!table) throw new TRPCError({ code: 'NOT_FOUND', message: 'Mesa não encontrada' });
         await assertEstablishmentOwnership(ctx.user.id, table.establishmentId);
         await db.closeTable(input.tableId, input.paymentMethod, input.paidAmount, input.changeAmount || 0);
+        sendEvent(table.establishmentId, "table_updated", { tableId: input.tableId, action: "close" });
         return { success: true };
+      }),
+
+    // Solicitar conta (garçom pede fechamento)
+    requestBill: protectedProcedure
+      .input(z.object({
+        tableId: z.number(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const table = await db.getTableById(input.tableId);
+        if (!table) throw new TRPCError({ code: 'NOT_FOUND', message: 'Mesa não encontrada' });
+        await assertEstablishmentOwnership(ctx.user.id, table.establishmentId);
+        // Atualizar status para requesting_bill
+        await db.updateTableStatus(input.tableId, "requesting_bill");
+        // Salvar quem solicitou e quando
+        await db.setRequestingBillInfo(input.tableId, ctx.user.name || "Colaborador");
+        sendEvent(table.establishmentId, "table_updated", { tableId: input.tableId, action: "requestBill" });
+        return { success: true };
+      }),
+
+    // Listar mesas aguardando fechamento
+    getPendingClosures: protectedProcedure
+      .input(z.object({
+        establishmentId: z.number(),
+      }))
+      .query(async ({ ctx, input }) => {
+        await assertEstablishmentOwnership(ctx.user.id, input.establishmentId);
+        return await db.getPendingClosures(input.establishmentId);
       }),
 
     // Fechamento parcial de mesa
@@ -213,6 +243,7 @@ export const tablesRouter = router({
         if (!table) throw new TRPCError({ code: 'NOT_FOUND', message: 'Mesa não encontrada' });
         await assertEstablishmentOwnership(ctx.user.id, table.establishmentId);
         const result = await db.partialCloseTable(input.tableId, input.itemIds, input.paymentMethod);
+        sendEvent(table.establishmentId, "table_updated", { tableId: input.tableId, action: "partialClose" });
         return result;
       }),
 
@@ -228,7 +259,9 @@ export const tablesRouter = router({
         const table = await db.getTableById(input.tableId);
         if (!table) throw new TRPCError({ code: 'NOT_FOUND', message: 'Mesa não encontrada' });
         await assertEstablishmentOwnership(ctx.user.id, table.establishmentId);
-        return db.loosePayment(input.tableId, input.amount, input.paymentMethod, input.notes);
+        const lpResult = await db.loosePayment(input.tableId, input.amount, input.paymentMethod, input.notes);
+        sendEvent(table.establishmentId, "table_updated", { tableId: input.tableId, action: "loosePayment" });
+        return lpResult;
       }),
 
     // Total de pagamentos avulsos de uma comanda
@@ -283,6 +316,7 @@ export const tablesRouter = router({
           reservedGuests: input.reservedGuests,
         } : undefined;
         await db.updateTableStatus(input.id, input.status, input.guests, reservationData);
+        sendEvent(table.establishmentId, "table_updated", { tableId: input.id, action: "updateStatus" });
         
         // Enviar WhatsApp de confirmação de reserva se telefone preenchido
         if (input.status === "reserved" && input.reservedPhone) {
@@ -511,6 +545,7 @@ export const tablesRouter = router({
             status: 'free',
           });
         }
+        sendEvent(table.establishmentId, "table_updated", { tableId: input.tableId, action: "split" });
         
         return { success: true };
       }),
@@ -590,6 +625,8 @@ export const tablesRouter = router({
           input.transferLabel ?? false
         );
         
+        sendEvent(establishment.id, "table_updated", { tableId: input.sourceTableId, action: "transfer" });
+        sendEvent(establishment.id, "table_updated", { tableId: input.targetTableId, action: "transfer" });
         return { success: true, sourceEmpty };
       }),
 

@@ -3585,7 +3585,7 @@ export async function autoCancelExpiredNewOrder(orderId: number): Promise<boolea
 
   const cutoff = new Date(Date.now() - 20 * 60 * 1000);
   const now = new Date();
-  const reason = 'Cancelado automaticamente: pedido novo sem aceite por mais de 20 minutos.';
+  const reason = 'Cancelado automaticamente: pedido novo sem aceite por mais de 35 minutos.';
   const result = await db.update(orders)
     .set({ status: 'cancelled', cancellationReason: reason, completedAt: now, updatedAt: now })
     .where(and(
@@ -4384,23 +4384,20 @@ export async function getRevenueByHour(establishmentId: number, period: 'today' 
       }
     }
 
-    const result = await db.select({
-      localDate: sql<string>`DATE_FORMAT(CONVERT_TZ(${orders.createdAt}, '+00:00', ${tz}), '%Y-%m-%d')`,
-      hour: sql<number>`HOUR(CONVERT_TZ(${orders.createdAt}, '+00:00', ${tz}))`,
-      revenue: sql<number>`COALESCE(SUM(${orders.total}), 0)`,
-      orderCount: sql<number>`COUNT(*)`
-    })
-      .from(orders)
-      .where(and(
-        eq(orders.establishmentId, establishmentId),
-        sql`CONVERT_TZ(${orders.createdAt}, '+00:00', ${tz}) >= ${startStr}`,
-        sql`CONVERT_TZ(${orders.createdAt}, '+00:00', ${tz}) <= ${endStr}`,
-        eq(orders.status, 'completed')
-      ))
-      .groupBy(
-        sql`DATE_FORMAT(CONVERT_TZ(${orders.createdAt}, '+00:00', ${tz}), '%Y-%m-%d')`,
-        sql`HOUR(CONVERT_TZ(${orders.createdAt}, '+00:00', ${tz}))`
-      );
+    const rawResult = await db.execute(sql`
+      SELECT 
+        DATE_FORMAT(CONVERT_TZ(${orders.createdAt}, '+00:00', ${tz}), '%Y-%m-%d') as localDate,
+        HOUR(CONVERT_TZ(${orders.createdAt}, '+00:00', ${tz})) as hour,
+        COALESCE(SUM(${orders.total}), 0) as revenue,
+        COUNT(*) as orderCount
+      FROM ${orders}
+      WHERE ${orders.establishmentId} = ${establishmentId}
+        AND CONVERT_TZ(${orders.createdAt}, '+00:00', ${tz}) >= ${startStr}
+        AND CONVERT_TZ(${orders.createdAt}, '+00:00', ${tz}) <= ${endStr}
+        AND ${orders.status} = ${'completed'}
+      GROUP BY 1, 2
+    `);
+    const result = (rawResult as any)[0] as Array<{localDate: string; hour: number; revenue: number; orderCount: number}>;
 
     const revenueByHour = new Map<number, { revenue: number; orderCount: number }>();
 
@@ -8371,6 +8368,7 @@ export async function upsertWhatsappConfig(data: {
         notifyOnNewOrder: data.notifyOnNewOrder ?? existing.notifyOnNewOrder,
         notifyOnPreparing: data.notifyOnPreparing ?? existing.notifyOnPreparing,
         notifyOnReady: data.notifyOnReady ?? existing.notifyOnReady,
+        notifyOnOutForDelivery: data.notifyOnOutForDelivery ?? existing.notifyOnOutForDelivery,
         notifyOnCompleted: data.notifyOnCompleted ?? existing.notifyOnCompleted,
         notifyOnCancelled: data.notifyOnCancelled ?? existing.notifyOnCancelled,
         templateNewOrder: data.templateNewOrder !== undefined ? data.templateNewOrder : existing.templateNewOrder,
@@ -8437,6 +8435,7 @@ Motivo: *{{cancellationReason}}*`;
     notifyOnNewOrder: data.notifyOnNewOrder ?? true,
     notifyOnPreparing: data.notifyOnPreparing ?? true,
     notifyOnReady: data.notifyOnReady ?? true,
+    notifyOnOutForDelivery: data.notifyOnOutForDelivery ?? true,
     notifyOnCompleted: data.notifyOnCompleted ?? true, // Ativado por padrão
     notifyOnCancelled: data.notifyOnCancelled ?? true,
     templateNewOrder: data.templateNewOrder || defaultTemplateNewOrder,
@@ -10712,6 +10711,38 @@ export async function closeTable(
     }
   }
 
+  // === Registrar comissão automaticamente se destino = garçons ===
+  if (tab) {
+    const scAmount = parseFloat(tab.serviceCharge || "0");
+    if (scAmount > 0 && table) {
+      try {
+        const est = await getEstablishmentById(table.establishmentId);
+        if (est && (est as any).serviceChargeDestination === 'staff') {
+          // Buscar sessão de caixa aberta para este estabelecimento
+          const [openSession] = await db.select().from(cashSessions)
+            .where(and(
+              eq(cashSessions.establishmentId, table.establishmentId),
+              eq(cashSessions.status, "open")
+            ))
+            .limit(1);
+          if (openSession) {
+            await db.insert(cashMovements).values({
+              establishmentId: table.establishmentId,
+              sessionId: openSession.id,
+              type: "comissao",
+              amount: scAmount.toFixed(2),
+              reason: `Taxa de servico - Mesa ${tableDisplayName}`,
+              operatorName: null,
+              paymentMethod: paymentMethod || null,
+            });
+            logger.info(`[closeTable] Comissao registrada: R$ ${scAmount.toFixed(2)} - Mesa ${tableDisplayName}`);
+          }
+        }
+      } catch (err) {
+        logger.error('[closeTable] Erro ao registrar comissao:', err);
+      }
+    }
+  }
   // Liberar mesa e limpar label
   await updateTableStatus(tableId, "free");
   await updateTable(tableId, { label: null });
@@ -13934,7 +13965,9 @@ export async function calculateCashbackForOrder(
     eligibleTotal = items.reduce((sum, item) => sum + Number(item.totalPrice), 0);
   } else {
     // Apenas categorias específicas
-    const allowedCategoryIds = est[0].cashbackCategoryIds || [];
+    const rawCategoryIds = est[0].cashbackCategoryIds || [];
+    // Resolver IDs de draft para published (admin salva draft IDs, pedidos usam published IDs)
+    const allowedCategoryIds = await resolveDraftToPublishedCategoryIds(establishmentId, rawCategoryIds);
     if (allowedCategoryIds.length === 0) {
       return { cashbackAmount: 0, eligibleTotal: 0 };
     }
@@ -19595,4 +19628,59 @@ export async function getCustomerDetailsTab(establishmentId: number) {
       weeklyDistribution: weeklyPct,
     },
   };
+}
+
+// ===== Requesting Bill Helpers =====
+export async function setRequestingBillInfo(tableId: number, requestedBy: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(tables)
+    .set({ 
+      requestingBillAt: new Date(),
+      requestingBillBy: requestedBy,
+    })
+    .where(eq(tables.id, tableId));
+}
+
+export async function getPendingClosures(establishmentId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select()
+    .from(tables)
+    .where(
+      and(
+        eq(tables.establishmentId, establishmentId),
+        eq(tables.status, "requesting_bill")
+      )
+    )
+    .orderBy(tables.requestingBillAt);
+}
+
+export async function clearRequestingBillInfo(tableId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(tables)
+    .set({ 
+      requestingBillAt: null,
+      requestingBillBy: null,
+    })
+    .where(eq(tables.id, tableId));
+}
+
+
+
+export async function cashGetSessionCommissions(establishmentId: number, sessionId: number) {
+  const db = await getDb();
+  if (!db) return { commissions: [], total: 0, count: 0 };
+  const [session] = await db.select().from(cashSessions).where(eq(cashSessions.id, sessionId)).limit(1);
+  if (!session) return { commissions: [], total: 0, count: 0 };
+  const result = await db.select().from(cashMovements)
+    .where(and(
+      eq(cashMovements.establishmentId, establishmentId),
+      eq(cashMovements.sessionId, sessionId),
+      eq(cashMovements.type, "comissao")
+    ))
+    .orderBy(desc(cashMovements.createdAt));
+  const total = result.reduce((acc, m) => acc + (parseFloat(m.amount) || 0), 0);
+  return { commissions: result, total, count: result.length };
 }

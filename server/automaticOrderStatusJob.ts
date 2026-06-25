@@ -7,7 +7,7 @@ import {
 import { logger } from "./_core/logger";
 
 const AUTO_ORDER_STATUS_INTERVAL_MS = 5 * 60 * 1000;
-const NEW_ORDER_AUTO_CANCEL_AFTER_MS = 20 * 60 * 1000;
+const NEW_ORDER_AUTO_CANCEL_AFTER_MS = 35 * 60 * 1000;
 const READY_ORDER_AUTO_COMPLETE_AFTER_MS = 60 * 60 * 1000;
 
 let jobInterval: ReturnType<typeof setInterval> | null = null;

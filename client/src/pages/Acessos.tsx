@@ -71,7 +71,7 @@ const PERMISSION_GROUPS = [
   {
     title: "OPERACIONAL",
     permissions: [
-      { key: "pedidos", label: "Pedidos" },
+      { key: "pedidos", label: "Gestor de Pedidos" },
       { key: "clientes", label: "Clientes" },
       { key: "entregadores", label: "Entregadores" },
     ],

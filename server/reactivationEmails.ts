@@ -6,6 +6,9 @@
  * - 30 days after cancelation: "Última chance! Seus dados serão arquivados em 60 dias."
  * 
  * The first email (confirmation) is sent immediately in the confirmCancel procedure.
+ * 
+ * IMPORTANT: Before sending, checks if the establishment already has an active
+ * subscription (they may have re-subscribed). If so, skips the email.
  */
 import { getDb } from "./db";
 import { planSubscriptions } from "../drizzle/schema";
@@ -17,17 +20,30 @@ import * as db from "./db";
 interface ReactivationResult {
   sent15Days: number;
   sent30Days: number;
+  skipped: number;
   errors: string[];
 }
 
+/**
+ * Check if an establishment currently has an active subscription.
+ * If they re-subscribed after canceling, we should NOT send reactivation emails.
+ */
+async function hasActiveSubscription(dbInstance: any, establishmentId: number): Promise<boolean> {
+  const activeSubs = await dbInstance.select().from(planSubscriptions)
+    .where(and(
+      eq(planSubscriptions.establishmentId, establishmentId),
+      eq(planSubscriptions.status, "active"),
+    ));
+  return activeSubs.length > 0;
+}
+
 export async function processReactivationEmails(): Promise<ReactivationResult> {
-  const result: ReactivationResult = { sent15Days: 0, sent30Days: 0, errors: [] };
-  
+  const result: ReactivationResult = { sent15Days: 0, sent30Days: 0, skipped: 0, errors: [] };
   const dbInstance = await getDb();
   if (!dbInstance) return result;
-  
+
   const now = new Date();
-  
+
   // Find subscriptions canceled exactly 15 days ago (within a 24h window)
   const fifteenDaysAgo = new Date(now);
   fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
@@ -35,7 +51,7 @@ export async function processReactivationEmails(): Promise<ReactivationResult> {
   fifteenDaysAgoStart.setHours(0, 0, 0, 0);
   const fifteenDaysAgoEnd = new Date(fifteenDaysAgo);
   fifteenDaysAgoEnd.setHours(23, 59, 59, 999);
-  
+
   // Find subscriptions canceled exactly 30 days ago (within a 24h window)
   const thirtyDaysAgo = new Date(now);
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -43,7 +59,7 @@ export async function processReactivationEmails(): Promise<ReactivationResult> {
   thirtyDaysAgoStart.setHours(0, 0, 0, 0);
   const thirtyDaysAgoEnd = new Date(thirtyDaysAgo);
   thirtyDaysAgoEnd.setHours(23, 59, 59, 999);
-  
+
   // Get canceled subscriptions from 15 days ago
   const subs15Days = await dbInstance.select().from(planSubscriptions)
     .where(and(
@@ -52,7 +68,7 @@ export async function processReactivationEmails(): Promise<ReactivationResult> {
       gte(planSubscriptions.canceledAt, fifteenDaysAgoStart),
       lte(planSubscriptions.canceledAt, fifteenDaysAgoEnd),
     ));
-  
+
   // Get canceled subscriptions from 30 days ago
   const subs30Days = await dbInstance.select().from(planSubscriptions)
     .where(and(
@@ -61,20 +77,27 @@ export async function processReactivationEmails(): Promise<ReactivationResult> {
       gte(planSubscriptions.canceledAt, thirtyDaysAgoStart),
       lte(planSubscriptions.canceledAt, thirtyDaysAgoEnd),
     ));
-  
+
   // Send 15-day reactivation emails
   for (const sub of subs15Days) {
     try {
+      // Skip if establishment already has an active subscription
+      if (await hasActiveSubscription(dbInstance, sub.establishmentId)) {
+        result.skipped++;
+        logger.info(`[ReactivationEmails] Skipped 15-day email for est=${sub.establishmentId} (already has active subscription)`);
+        continue;
+      }
+
       const establishment = await db.getEstablishmentById(sub.establishmentId);
       if (!establishment) continue;
-      
+
       // Get user email from establishment
       const user = establishment.userId ? await db.getUserById(establishment.userId) : null;
       const email = user?.email || establishment.email;
       if (!email) continue;
-      
+
       const estName = establishment.name || "Seu restaurante";
-      
+
       await sendEmail({
         to: [{ email }],
         subject: "Sentimos sua falta! - Mindi",
@@ -96,26 +119,32 @@ export async function processReactivationEmails(): Promise<ReactivationResult> {
         `,
         tags: ["reactivation-15days"],
       });
-      
       result.sent15Days++;
       logger.info(`[ReactivationEmails] 15-day email sent: est=${sub.establishmentId}, email=${email}`);
     } catch (err: any) {
       result.errors.push(`15d est=${sub.establishmentId}: ${err.message}`);
     }
   }
-  
+
   // Send 30-day reactivation emails
   for (const sub of subs30Days) {
     try {
+      // Skip if establishment already has an active subscription
+      if (await hasActiveSubscription(dbInstance, sub.establishmentId)) {
+        result.skipped++;
+        logger.info(`[ReactivationEmails] Skipped 30-day email for est=${sub.establishmentId} (already has active subscription)`);
+        continue;
+      }
+
       const establishment = await db.getEstablishmentById(sub.establishmentId);
       if (!establishment) continue;
-      
+
       const user = establishment.userId ? await db.getUserById(establishment.userId) : null;
       const email = user?.email || establishment.email;
       if (!email) continue;
-      
+
       const estName = establishment.name || "Seu restaurante";
-      
+
       await sendEmail({
         to: [{ email }],
         subject: "Última chance! Seus dados serão arquivados em breve - Mindi",
@@ -144,17 +173,16 @@ export async function processReactivationEmails(): Promise<ReactivationResult> {
         `,
         tags: ["reactivation-30days"],
       });
-      
       result.sent30Days++;
       logger.info(`[ReactivationEmails] 30-day email sent: est=${sub.establishmentId}, email=${email}`);
     } catch (err: any) {
       result.errors.push(`30d est=${sub.establishmentId}: ${err.message}`);
     }
   }
-  
-  if (result.sent15Days > 0 || result.sent30Days > 0) {
-    logger.info(`[ReactivationEmails] Processed: 15d=${result.sent15Days}, 30d=${result.sent30Days}, errors=${result.errors.length}`);
+
+  if (result.sent15Days > 0 || result.sent30Days > 0 || result.skipped > 0) {
+    logger.info(`[ReactivationEmails] Processed: 15d=${result.sent15Days}, 30d=${result.sent30Days}, skipped=${result.skipped}, errors=${result.errors.length}`);
   }
-  
+
   return result;
 }

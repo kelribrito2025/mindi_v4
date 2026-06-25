@@ -5445,8 +5445,8 @@ export default function Banking() {
             </button>
           )}
           <PageHeader
-            title={showOnboarding ? "Vendas e Repasses" : title}
-            description={showOnboarding ? "Configure vendas, recebimentos e repasses para o seu estabelecimento" : description}
+            title={showOnboarding ? "Pagamento Online" : title}
+            description={showOnboarding ? "Ative o pagamento online em minutos. Dinheiro cai na conta bancária cadastrada, sem intermediários." : description}
             icon={<Landmark className="h-6 w-6 text-blue-600" />}
           />
           {isFullySetup && (

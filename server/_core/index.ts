@@ -725,7 +725,7 @@ function generateReceiptHTML(
     sections += `
     <div class="section-box">
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-weight: ${headerFontWeight}; display: inline-flex; align-items: center;"><img src="/client-icon.png" style="width: 13px; height: 13px; margin-right: 4px;" /> Cliente</span>
+        <span style="font-weight: ${headerFontWeight}; display: inline-flex; align-items: center;"><img src="/client-icon.png" style="width: 13px; height: 13px; margin-right: 4px;" /></span>
         <span style="font-weight: ${headerFontWeight};">${order.customerName || 'Nao informado'}${order.customerPhone ? ' - ' + formatPhone(order.customerPhone) : ''}</span>
       </div>
     </div>`;
@@ -1652,7 +1652,7 @@ async function startServer() {
       useDefaults: false,
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", ...(process.env.NODE_ENV === "production" ? [] : ["'unsafe-eval'"]), "https://forge.manus.ai", "https://maps.googleapis.com", "https://maps.gstatic.com", "https://assets.pagseguro.com.br", "https://*.pagseguro.com.br", "https://*.uol.com.br", "https://connect.facebook.net"], // unsafe-eval apenas em dev (Vite HMR); forge/googleapis para Google Maps; pagseguro para SDK 3DS; connect.facebook.net para Embedded Signup Meta/Facebook
+        scriptSrc: ["'self'", "'unsafe-inline'", ...(process.env.NODE_ENV === "production" ? [] : ["'unsafe-eval'"]), "https://forge.manus.ai", "https://maps.googleapis.com", "https://maps.gstatic.com", "https://assets.pagseguro.com.br", "https://*.pagseguro.com.br", "https://*.uol.com.br", "https://connect.facebook.net", "https://static.cloudflareinsights.com"], // unsafe-eval apenas em dev (Vite HMR); forge/googleapis para Google Maps; pagseguro para SDK 3DS; connect.facebook.net para Embedded Signup Meta/Facebook
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         imgSrc: ["'self'", "data:", "blob:", "https:"], // https: permite imagens de S3 e CDNs
         connectSrc: ["'self'", "https:", "wss:", "ws:"], // wss/ws para SSE e WebSockets
@@ -4812,7 +4812,7 @@ async function startServer() {
           const textReceipt = generateCashReceiptText(
             rd,
             establishment,
-            (settings?.paperWidth as '58mm' | '80mm') || '80mm'
+            ((settings as any)?.mindiPaperWidth || settings?.paperWidth || '80mm') as '58mm' | '80mm'
           );
           res.setHeader("Content-Type", "text/plain; charset=utf-8");
           res.send(textReceipt);
@@ -4874,7 +4874,7 @@ async function startServer() {
         const textReceipt = generatePlainTextReceipt(
           orderData,
           establishment,
-          (settings?.paperWidth as '58mm' | '80mm') || '80mm'
+          ((settings as any)?.mindiPaperWidth || settings?.paperWidth || '80mm') as '58mm' | '80mm'
         );
         
         res.setHeader("Content-Type", "text/plain; charset=utf-8");

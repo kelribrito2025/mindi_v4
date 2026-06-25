@@ -441,6 +441,18 @@ export function PDVSlidebar({ isOpen, onClose, onToggle, tableNumber, tableId, t
     window.addEventListener('open-partial-close', handleOpenPartialClose);
     return () => window.removeEventListener('open-partial-close', handleOpenPartialClose);
   }, [tableId]);
+  // Listener para abrir modal de tipo de fechamento via evento customizado (da sidebar Aguardando Fechamento)
+  useEffect(() => {
+    const handleOpenCloseType = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail?.tableId === tableId) {
+        setSelectedTab('comanda');
+        setShowCloseTypeModal(true);
+      }
+    };
+    window.addEventListener('open-close-type', handleOpenCloseType);
+    return () => window.removeEventListener('open-close-type', handleOpenCloseType);
+  }, [tableId]);
 
   // Resetar clearedCart quando trocar de mesa
   useEffect(() => {
@@ -1366,7 +1378,7 @@ export function PDVSlidebar({ isOpen, onClose, onToggle, tableNumber, tableId, t
         <div
           ref={handleRef as any}
           className={cn(
-            "fixed flex flex-col items-center justify-center cursor-pointer select-none touch-none",
+            "fixed hidden md:flex flex-col items-center justify-center cursor-pointer select-none touch-none",
             "bg-gradient-to-r from-red-500 to-red-500 rounded-l-lg shadow-lg",
             "hover:from-red-500 hover:to-red-500 transition-colors duration-200",
             !isOpen && "animate-handle-pulse",
@@ -1456,7 +1468,6 @@ export function PDVSlidebar({ isOpen, onClose, onToggle, tableNumber, tableId, t
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 h-9 text-sm"
-                  autoFocus
                 />
               </div>
             </div>

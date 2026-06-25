@@ -1,6 +1,6 @@
 // Service Worker para Cardápio Admin PWA
 // Atualizado para evitar tela branca causada por HTML/assets antigos presos no cache.
-const CACHE_VERSION = '20260531oficial-favicon';
+const CACHE_VERSION = '20260619-cache-bust';
 const CACHE_NAME = `cardapio-admin-${CACHE_VERSION}`;
 const STATIC_CACHE = `cardapio-static-${CACHE_VERSION}`;
 

@@ -75,6 +75,8 @@ export default function AdminRestauranteDetalhe() {
   const [confirmAction, setConfirmAction] = useState<string | null>(null);
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [changeBillingOpen, setChangeBillingOpen] = useState(false);
+  const [newBillingDate, setNewBillingDate] = useState("");
   const [activeTab, setActiveTab] = useState("cobranca");
 
   // Contact editing state
@@ -130,6 +132,15 @@ export default function AdminRestauranteDetalhe() {
       setConfirmAction(null);
     },
     onError: (err) => toast.error(err.message),
+  });
+  const changeBillingDateMutation = trpc.admin.restaurants.changeBillingDate.useMutation({
+    onSuccess: () => {
+      toast.success("Data de cobrança alterada!");
+      refetch();
+      setChangeBillingOpen(false);
+      setNewBillingDate("");
+    },
+    onError: (err: any) => toast.error(err.message),
   });
 
   const impersonateMutation = trpc.admin.restaurants.impersonate.useMutation({
@@ -478,6 +489,20 @@ export default function AdminRestauranteDetalhe() {
                         variant="outline"
                         size="sm"
                         className="rounded-xl border-border/50"
+                        onClick={() => {
+                          if (restaurant.planExpiresAt) {
+                            const d = new Date(restaurant.planExpiresAt);
+                            setNewBillingDate(d.toISOString().split("T")[0]);
+                          }
+                          setChangeBillingOpen(true);
+                        }}
+                      >
+                        <Calendar className="h-3.5 w-3.5 mr-1.5" /> Alterar cobrança
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-xl border-border/50"
                         onClick={() => toggleMenuMutation.mutate({ id: restaurant.id, isOpen: !restaurant.isOpen })}
                       >
                         {restaurant.isOpen ? (
@@ -746,6 +771,43 @@ export default function AdminRestauranteDetalhe() {
       </div>
 
       {/* Change Plan Dialog */}
+      {/* Dialog: Alterar Data de Cobrança */}
+      <Dialog open={changeBillingOpen} onOpenChange={setChangeBillingOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Alterar Data de Cobrança</DialogTitle>
+            <DialogDescription>
+              Defina a nova data de vencimento/renovação do plano. As notificações de cobrança serão recalculadas automaticamente.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Nova data de cobrança</Label>
+              <Input
+                type="date"
+                value={newBillingDate}
+                onChange={(e: any) => setNewBillingDate(e.target.value)}
+              />
+            </div>
+            {newBillingDate && (
+              <p className="text-sm text-muted-foreground">
+                A próxima cobrança será em: <strong>{new Date(newBillingDate + "T12:00:00").toLocaleDateString("pt-BR")}</strong>
+              </p>
+            )}
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setChangeBillingOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              disabled={!newBillingDate || changeBillingDateMutation.isPending}
+              onClick={() => changeBillingDateMutation.mutate({ id: restaurant.id, newDate: newBillingDate })}
+            >
+              {changeBillingDateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <Dialog open={changePlanOpen} onOpenChange={setChangePlanOpen}>
         <DialogContent>
           <DialogHeader>

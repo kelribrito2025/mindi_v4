@@ -244,27 +244,33 @@ export default function CategorySidebarCard({
   };
 
   return (
-    <div className="mt-3 rounded-2xl border border-border/50 bg-card overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3">
-        <span className="text-sm font-semibold text-foreground">Categorias</span>
-        {!isReadOnly && (
+    <div className="mt-3">
+      {/* Tab "Categorias" - folder tab style above the card */}
+      <div className="flex items-end">
+        <div className="px-4 py-1.5 bg-card border border-border/50 border-b-0 rounded-t-xl">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Categorias</span>
+        </div>
+      </div>
+      {/* Card body - connects to the tab above */}
+      <div className="rounded-2xl rounded-tl-none border border-border/50 bg-card overflow-hidden">
+      {/* Botao Nova Categoria - topo do card */}
+      {!isReadOnly && (
+        <div className="px-3 pt-3 pb-0">
           <button
             onClick={onAddCategory}
-            className="flex items-center gap-1 text-xs font-medium text-red-500 hover:text-red-500 transition-colors"
+            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-red-500 hover:text-red-600 hover:bg-red-50 border border-dashed border-red-300 hover:border-red-400 rounded-lg transition-colors"
           >
             <Plus className="h-3.5 w-3.5" />
-            Nova
+            Nova Categoria
           </button>
-        )}
-      </div>
-
+        </div>
+      )}
       {/* "Todos" button */}
-      <div className="px-3 pb-1">
+      <div className="px-3 pt-3 pb-2">
         <button
           onClick={() => onSelectCategory(null)}
           className={cn(
-            "w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-colors",
+            "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors",
             selectedCategoryId === null
               ? "bg-red-500 text-white shadow-sm"
               : "bg-muted/40 hover:bg-muted/60 text-foreground"
@@ -311,6 +317,7 @@ export default function CategorySidebarCard({
             ))}
           </SortableContext>
         </DndContext>
+      </div>
       </div>
     </div>
   );

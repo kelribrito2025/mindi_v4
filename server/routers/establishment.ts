@@ -211,6 +211,7 @@ export const establishmentRouter = router({
         freeDeliveryMinValue: z.string().optional(),
         timezone: z.string().optional(),
         reviewsEnabled: z.boolean().optional(),
+        publicChatEnabled: z.boolean().optional(),
         fakeReviewCount: z.number().min(0).max(250).optional(),
         ownerDisplayName: z.string().max(11).nullable().optional(),
         autoAcceptOrders: z.boolean().optional(),

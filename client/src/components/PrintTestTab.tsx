@@ -807,7 +807,7 @@ export function PrintTestTab({ establishmentId, printers, onAddPrinter, onRefres
   
   <div class="section-box">
     <div style="display: flex; justify-content: space-between; align-items: center;">
-      <span style="font-weight: ${headerFontWeight}; display: inline-flex; align-items: center;"><img loading="lazy" src="/client-icon.png" style="width: 13px; height: 13px; margin-right: 4px;" /> Cliente</span>
+      <span style="font-weight: ${headerFontWeight}; display: inline-flex; align-items: center;"><img loading="lazy" src="/client-icon.png" style="width: 13px; height: 13px; margin-right: 4px;" /></span>
       <span style="font-weight: ${headerFontWeight};">${sampleOrder.customerName} - ${sampleOrder.customerPhone}</span>
     </div>
   </div>

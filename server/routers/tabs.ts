@@ -2,6 +2,7 @@ import * as db from "../db";
 import { TRPCError } from "@trpc/server";
 import { assertEstablishmentOwnership } from "./helpers";
 import { logger } from "../_core/logger";
+import { sendEvent } from "../_core/sse";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 
@@ -120,6 +121,7 @@ export const tabsRouter = router({
         // dentro de db.createOrder -> db.deductStockForOrder
         // que desconta tanto o estoque avançado (stockItems) quanto o simples (stockQuantity)
         
+        sendEvent(establishment.id, "table_updated", { tableId: table.id, action: "addItems" });
         return { success: true };
       }),
 
@@ -208,6 +210,7 @@ export const tabsRouter = router({
         if (tab) {
           await db.updateTab(tab.id, { status: "requesting_bill" });
         }
+        sendEvent(table!.establishmentId, "table_updated", { tableId: input.tableId, action: "requestBill" });
         return { success: true };
       }),
   });

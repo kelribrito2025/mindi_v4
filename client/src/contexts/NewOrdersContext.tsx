@@ -644,45 +644,54 @@ export function NewOrdersProvider({ children }: { children: ReactNode }) {
     }
 
     // === Notificação Push do Navegador (quando aba inativa) ===
+    // Se o push do servidor (Web Push) está registrado, NÃO mostrar notificação local
+    // para evitar duplicação. O service worker já vai receber e mostrar o push do servidor.
     if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
-      try {
-        const orderObj = order as any;
-        const orderNumber = orderObj?.orderNumber || orderObj?.id || '';
-        const customerName = orderObj?.customerName || '';
-        const total = orderObj?.total ? `R$ ${(orderObj.total / 100).toFixed(2).replace('.', ',')}` : '';
-        
-        const title = isIfoodOrder ? '🟥 Novo Pedido iFood!' : '🔔 Novo Pedido!';
-        let body = '';
-        if (orderNumber) body += `Pedido #${orderNumber}`;
-        if (customerName) body += ` - ${customerName}`;
-        if (total) body += ` - ${total}`;
-        if (!body) body = 'Você recebeu um novo pedido. Confira agora!';
-
-        // Tentar via Service Worker primeiro (funciona melhor em background)
-        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-          navigator.serviceWorker.ready.then((registration) => {
-            registration.showNotification(title, {
+      // Verificar se há push subscription ativa (push do servidor)
+      // Se o service worker está controlando a página, push está registrado
+      const hasPushSubscription = !!('serviceWorker' in navigator && navigator.serviceWorker.controller);
+      if (!hasPushSubscription) {
+        // Fallback: mostrar notificação local apenas se push do servidor NÃO está ativo
+        try {
+          const orderObj = order as any;
+          const orderNumber = orderObj?.orderNumber || orderObj?.id || '';
+          const customerName = orderObj?.customerName || '';
+          // total já vem em reais (ex: "15.00"), NÃO dividir por 100
+          const totalNum = parseFloat(orderObj?.total || '0');
+          const total = totalNum > 0 ? `R$ ${totalNum.toFixed(2).replace('.', ',')}` : '';
+          const title = isIfoodOrder ? '\u{1F7E5} Novo Pedido iFood!' : '\u{1F514} Novo Pedido!';
+          let body = '';
+          // orderNumber pode já conter # (ex: "#P2"), não adicionar outro #
+          if (orderNumber) body += String(orderNumber).startsWith('#') ? `Pedido ${orderNumber}` : `Pedido #${orderNumber}`;
+          if (customerName) body += ` de ${customerName}`;
+          if (total) body += ` - ${total}`;
+          if (!body) body = 'Você recebeu um novo pedido. Confira agora!';
+          if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.ready.then((registration) => {
+              registration.showNotification(title, {
+                body,
+                icon: '/icons/icon-192x192.png',
+                badge: '/icons/icon-96x96.png',
+                tag: `new-order-${orderNumber || Date.now()}`,
+                requireInteraction: true,
+                data: { url: '/pedidos' },
+                silent: false,
+              } as NotificationOptions);
+            });
+          } else {
+            new Notification(title, {
               body,
               icon: '/icons/icon-192x192.png',
-              badge: '/icons/icon-96x96.png',
               tag: `new-order-${orderNumber || Date.now()}`,
               requireInteraction: true,
-              data: { url: '/pedidos' },
-              silent: false,
-            } as NotificationOptions);
-          });
-        } else {
-          // Fallback: Notification API direta
-          new Notification(title, {
-            body,
-            icon: '/icons/icon-192x192.png',
-            tag: `new-order-${orderNumber || Date.now()}`,
-            requireInteraction: true,
-          });
+            });
+          }
+          console.log(`[NewOrders] [${timestamp}] Notificação local enviada (push não registrado)`);
+        } catch (e) {
+          console.error(`[NewOrders] [${timestamp}] Erro ao enviar notificação local:`, e);
         }
-        console.log(`[NewOrders] [${timestamp}] Notificação push do navegador enviada`);
-      } catch (e) {
-        console.error(`[NewOrders] [${timestamp}] Erro ao enviar notificação push:`, e);
+      } else {
+        console.log(`[NewOrders] [${timestamp}] Notificação local suprimida - push do servidor ativo`);
       }
     }
     

@@ -1751,7 +1751,7 @@ export default function Sugestoes() {
 
   return (
     <AdminLayout>
-      <div className="p-4 sm:p-6">
+      <div className="p-4 sm:p-6 overflow-x-hidden">
       <div className="space-y-6">
         <PageHeader
           title="Sugestões"
@@ -1894,10 +1894,10 @@ export default function Sugestoes() {
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <TabsList className="bg-muted/50 p-1 h-auto">
+            <TabsList className="bg-muted/50 p-1 h-auto w-full sm:w-auto flex-wrap sm:flex-nowrap">
               <TabsTrigger
                 value="fixed"
-                className="data-[state=active]:bg-white data-[state=active]:shadow-sm px-4 py-2 text-sm"
+                className="data-[state=active]:bg-white data-[state=active]:shadow-sm px-3 sm:px-4 py-2 text-xs sm:text-sm"
               >
                 <Star className="h-4 w-4 mr-1.5" />
                 Sempre sugerir
@@ -1907,7 +1907,7 @@ export default function Sugestoes() {
               </TabsTrigger>
               <TabsTrigger
                 value="linked"
-                className="data-[state=active]:bg-white data-[state=active]:shadow-sm px-4 py-2 text-sm"
+                className="data-[state=active]:bg-white data-[state=active]:shadow-sm px-3 sm:px-4 py-2 text-xs sm:text-sm"
               >
                 <Link2 className="h-4 w-4 mr-1.5" />
                 Sugestões vinculadas

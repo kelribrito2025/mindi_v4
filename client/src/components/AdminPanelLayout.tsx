@@ -23,6 +23,7 @@ import {
   ScrollText,
   Megaphone,
   FileText,
+  Wifi,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -36,6 +37,7 @@ const adminMenuItems = [
   { icon: ScrollText, label: "Log de Atividades", path: "/admin/audit-log" },
   { icon: Megaphone, label: "Changelog", path: "/admin/changelog" },
   { icon: FileText, label: "Logs de Pedidos", path: "/admin/order-logs" },
+  { icon: Wifi, label: "Conectividade SSE", path: "/admin/sse-logs" },
 ];
 
 interface AdminPanelLayoutProps {

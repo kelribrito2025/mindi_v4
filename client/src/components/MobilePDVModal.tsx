@@ -25,6 +25,8 @@ import {
   CreditCard,
   QrCode,
   DollarSign,
+  Ticket,
+  Eraser,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -187,6 +189,9 @@ export function MobilePDVModal({
   const [showLoosePaymentModal, setShowLoosePaymentModal] = useState(false);
   const [loosePaymentAmount, setLoosePaymentAmount] = useState('');
   const [loosePaymentMethod, setLoosePaymentMethod] = useState<string>('cash');
+  const [showCouponField, setShowCouponField] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{code: string; discount: number} | null>(null);
   // Estado para forma de pagamento no fechamento completo
   const [fullClosePaymentMethod, setFullClosePaymentMethod] = useState<string>('cash');
   const [activeView, setActiveView] = useState<'items' | 'search'>('items');
@@ -264,6 +269,14 @@ export function MobilePDVModal({
       });
     },
     onError: (error) => toast.error(error.message || "Erro ao abrir mesa"),
+  });
+
+  const requestBillMutation = trpc.tables.requestBill.useMutation({
+    onSuccess: () => {
+      toast.success("Conta solicitada! O caixa será notificado.");
+      onClose();
+    },
+    onError: (error) => toast.error(error.message || "Erro ao solicitar conta"),
   });
 
   const closeTableMutation = trpc.tables.close.useMutation({
@@ -611,6 +624,46 @@ export function MobilePDVModal({
   }, [isEditingMode, editingCartItem, productComplements]);
 
   // Imprimir recibo
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      toast.error("Digite o código do cupom");
+      return;
+    }
+    if (!establishmentId) {
+      toast.error("Estabelecimento não encontrado");
+      return;
+    }
+    setIsValidatingCoupon(true);
+    try {
+      const response = await fetch(`/api/trpc/coupon.validate?input=${encodeURIComponent(JSON.stringify({
+        json: {
+          establishmentId,
+          code: couponCode.toUpperCase(),
+          orderValue: getDisplayTotal(),
+          deliveryType: "self_service"
+        }
+      }))}`).then(res => res.json());
+      const result = response.result?.data?.json || response.result?.data;
+      if (result?.valid && result?.coupon) {
+        toast.success(`Cupom ${couponCode.toUpperCase()} aplicado!`);
+        setAppliedCoupon({ 
+          code: couponCode.toUpperCase(), 
+          discount: result.discount
+        });
+        setCouponCode('');
+      } else {
+        toast.error(result?.error || "Cupom inválido");
+      }
+    } catch (error) {
+      console.error("Erro ao validar cupom:", error);
+      toast.error("Erro ao validar cupom");
+    } finally {
+      setIsValidatingCoupon(false);
+    }
+  };
+
   const handlePrintTabReceipt = async () => {
     if (!tabId) return;
     const printMethod = printerSettings?.defaultPrintMethod || 'normal';
@@ -689,7 +742,10 @@ export function MobilePDVModal({
 
   const handleFinishOrder = () => {
     if (selectedTab === 'comanda' && tabId && tabData?.items && tabData.items.filter((item: any) => item.status !== 'cancelled').length > 0) {
-      setShowCloseTypeModal(true);
+      // Mobile: solicitar conta (garçom pede fechamento ao caixa)
+      if (tableId) {
+        requestBillMutation.mutate({ tableId });
+      }
       return;
     }
     if (cart.length === 0) { toast.error("Adicione itens ao pedido"); return; }
@@ -1087,73 +1143,124 @@ export function MobilePDVModal({
           </div>
 
           {/* Footer fixo */}
-          <div className="border-t border-border bg-card p-4 space-y-3">
-            {/* Subtotal e Total */}
-            {selectedTab === 'comanda' && loosePaymentsTotal > 0 ? (
-              <div className="space-y-1 px-1">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">Subtotal</span>
-                  <span className="text-sm font-semibold">{formatCurrency(getDisplayTotal())}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">Já pago (avulso)</span>
-                  <span className="text-sm font-medium text-green-600">-{formatCurrency(loosePaymentsTotal)}</span>
-                </div>
-                <div className="flex justify-between items-center pt-1 border-t border-border/50">
-                  <span className="text-sm font-semibold">Saldo restante</span>
-                  <span className="text-lg font-bold text-red-500">{formatCurrency(Math.max(0, getDisplayTotal() - loosePaymentsTotal))}</span>
-                </div>
-              </div>
-            ) : (
-              <div className="flex justify-between items-center px-1">
-                <span className="text-sm text-muted-foreground">Total</span>
-                <span className="text-lg font-bold text-red-500">{formatCurrency(getDisplayTotal())}</span>
+          <div className="border-t border-border/50 bg-card p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Subtotal</span>
+              <span className="text-sm font-semibold">{formatCurrency(getDisplayTotal())}</span>
+            </div>
+            {/* Pagamentos avulsos já feitos */}
+            {selectedTab === 'comanda' && loosePaymentsTotal > 0 && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Já pago (avulso)</span>
+                <span className="font-medium text-green-600">-{formatCurrency(loosePaymentsTotal)}</span>
               </div>
             )}
-            {/* Botões */}
+            <div className="flex items-center justify-between pt-2 border-t">
+              <span className="font-semibold">{selectedTab === 'comanda' && loosePaymentsTotal > 0 ? 'Saldo restante' : 'Total'}</span>
+              <span className="text-lg font-bold text-red-500">
+                {formatCurrency(Math.max(0, getDisplayTotal() - (selectedTab === 'comanda' ? loosePaymentsTotal : 0)))}
+              </span>
+            </div>
             <div className="flex gap-2">
-              {/* Botão Histórico */}
+              {/* Botão de Cupom */}
               <Button
                 variant="outline"
-                className="flex-shrink-0"
+                className={cn("px-3 flex-shrink-0", showCouponField && "border-red-500 bg-red-50")}
+                onClick={() => setShowCouponField(!showCouponField)}
+              >
+                <Ticket className={cn("h-4 w-4", showCouponField ? "text-red-500" : "text-muted-foreground")} />
+              </Button>
+              {/* Botão de Histórico */}
+              <Button
+                variant="outline"
+                className={cn("px-3 flex-shrink-0", showHistory && "border-blue-500 bg-blue-50")}
                 onClick={() => setShowHistory(true)}
                 disabled={!tableId}
-                size="sm"
               >
-                Histórico
+                <Clock className={cn("h-4 w-4", showHistory ? "text-blue-500" : "text-muted-foreground")} />
               </Button>
-              {selectedTab === 'consumo' && (
+              {/* Botão Imprimir - apenas quando aba Comanda está selecionada */}
+              {selectedTab === 'comanda' && tabId && (
+                <Button
+                  variant="outline"
+                  className="px-3 flex-shrink-0"
+                  onClick={handlePrintTabReceipt}
+                >
+                  <Printer className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              )}
+              {/* Botão Limpar/Desfazer */}
+              {selectedTab !== 'comanda' && (clearedCart ? (
                 <Button
                   variant="outline"
                   className="flex-1"
-                  onClick={clearedCart ? undoClearCart : clearCart}
-                  disabled={cart.length === 0 && !clearedCart}
-                  size="sm"
+                  onClick={undoClearCart}
                 >
-                  {clearedCart ? (
-                    <><Undo2 className="h-4 w-4 mr-1" /> Desfazer ({undoCountdown})</>
-                  ) : "Limpar"}
+                  <Undo2 className="h-4 w-4 mr-1" />
+                  Desfazer ({undoCountdown})
                 </Button>
-              )}
+              ) : (
+                <Button
+                  variant="outline"
+                  className="px-3 flex-shrink-0"
+                  onClick={clearCart}
+                  disabled={cart.length === 0}
+                >
+                  <Eraser className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              ))}
+              {/* Botão Fechar conta / Enviar pedido */}
               <Button
                 onClick={handleFinishOrder}
                 disabled={
                   (selectedTab === 'comanda'
                     ? (!tabData?.items || tabData.items.filter((item: any) => item.status !== 'cancelled').length === 0)
                     : cart.length === 0
-                  ) || addTabItemsMutation.isPending || openTableMutation.isPending || closeTableMutation.isPending
+                  ) || addTabItemsMutation.isPending || openTableMutation.isPending || closeTableMutation.isPending || requestBillMutation.isPending
                 }
                 className="flex-1 bg-red-500 hover:bg-red-500 text-white"
-                size="sm"
               >
-                {selectedTab !== 'comanda' && <ClipboardList className="h-4 w-4 mr-1" />}
-                {(addTabItemsMutation.isPending || openTableMutation.isPending || closeTableMutation.isPending)
-                  ? (closeTableMutation.isPending ? "Fechando..." : "Enviando...")
+                {selectedTab !== 'comanda' && <ClipboardList className="h-4 w-4 mr-2" />}
+                {(addTabItemsMutation.isPending || openTableMutation.isPending || closeTableMutation.isPending || requestBillMutation.isPending)
+                  ? (requestBillMutation.isPending ? "Solicitando..." : closeTableMutation.isPending ? "Fechando..." : "Enviando...")
                   : selectedTab === 'comanda'
-                    ? `Fechar Mesa ${tableDisplayName}`
+                    ? "Solicitar conta"
                     : "Enviar pedido"}
               </Button>
             </div>
+            {/* Campo de Cupom */}
+            {showCouponField && (
+              <div className="mt-2 flex gap-2">
+                {appliedCoupon ? (
+                  <div className="flex-1 flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <Ticket className="h-4 w-4 text-green-600" />
+                      <span className="text-sm font-medium text-green-700">{appliedCoupon.code}</span>
+                      <span className="text-xs text-green-600">-{formatCurrency(appliedCoupon.discount)}</span>
+                    </div>
+                    <button onClick={() => setAppliedCoupon(null)} className="text-green-600 hover:text-green-800">
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <Input
+                      placeholder="Código do cupom"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button
+                      onClick={handleApplyCoupon}
+                      disabled={!couponCode.trim() || isValidatingCoupon}
+                      variant="outline"
+                    >
+                      {isValidatingCoupon ? "..." : "Aplicar"}
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

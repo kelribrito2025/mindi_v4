@@ -1,4 +1,4 @@
-import { AdminLayout } from "@/components/AdminLayout";
+import { AdminLayout, getCollaboratorSession, HREF_TO_PERMISSION } from "@/components/AdminLayout";
 import { trpc } from "@/lib/trpc";
 import { getThumbUrl } from "../../../shared/imageUtils";
 import { BlurImage } from "@/components/BlurImage";
@@ -1714,7 +1714,20 @@ export default function PDV() {
 
             {/* Action */}
             <button
-              onClick={() => setLocation("/")}
+              onClick={() => {
+                const cs = getCollaboratorSession();
+                if (cs) {
+                  const perms = cs.permissions || [];
+                  // Find first permission that is NOT pdv (since we are leaving PDV)
+                  const firstNonPdv = perms.find(p => p !== "pdv");
+                  const route = firstNonPdv
+                    ? Object.entries(HREF_TO_PERMISSION).find(([, v]) => v === firstNonPdv)?.[0] || "/"
+                    : "/";
+                  setLocation(route);
+                } else {
+                  setLocation("/");
+                }
+              }}
               className="w-full rounded-[20px] h-11 text-[13px] font-semibold bg-red-500 hover:bg-red-600 text-white flex items-center justify-center gap-2 transition-colors"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>

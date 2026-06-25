@@ -3354,7 +3354,7 @@ export default function PublicMenu() {
     currentPlanType === "starter" ||
     currentPlanType === "trial" ||
     currentPlanType === "free";
-  const canShowPublicChat = hasAutomaticOrderNotifications(currentPlanType);
+  const canShowPublicChat = hasAutomaticOrderNotifications(currentPlanType) && establishment.publicChatEnabled !== false;
   const showPublicReviews = establishment.reviewsEnabled !== false && !isLitePlan;
   const filteredProducts = filterProducts(products);
 

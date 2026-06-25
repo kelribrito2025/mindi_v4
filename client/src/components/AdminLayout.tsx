@@ -702,12 +702,13 @@ interface AdminLayoutProps {
 }
 
 // Map href to permission key
-const HREF_TO_PERMISSION: Record<string, string> = {
+export const HREF_TO_PERMISSION: Record<string, string> = {
   '/': 'dashboard',
   '/pdv': 'pdv',
   '/mesas': 'mesas',
   '/cozinha': 'cozinha',
   '/pedidos': 'pedidos',
+  '/pedidos/historico': 'pedidos',
   '/agendados': 'pedidos',
   '/clientes': 'clientes',
   '/entregadores': 'entregadores',
@@ -734,7 +735,7 @@ const HREF_TO_PERMISSION: Record<string, string> = {
  * P15: Lê sessão do colaborador do cookie 'collaborator_info' (setado pelo servidor).
  * Migrado de localStorage para cookie para reduzir vulnerabilidade a XSS persistente.
  */
-function getCollaboratorSession(): { id: number; name: string; permissions: string[] } | null {
+export function getCollaboratorSession(): { id: number; name: string; permissions: string[] } | null {
   if (typeof window === 'undefined') return null;
   try {
     const cookies = document.cookie.split(';');
@@ -2256,23 +2257,16 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 <Menu className="h-4 w-4" />
               </button>
 
-              {mobileTopbarTitle && (
-                <div className="md:hidden min-w-0">
-                  <span className="block truncate text-sm font-semibold text-foreground">
-                    {mobileTopbarTitle}
-                  </span>
-                </div>
-              )}
 
               {/* Search - escondido no Banking e Sugestões */}
-              <div className={`${location.startsWith('/banking') || location.startsWith('/sugestoes') ? 'hidden' : 'hidden sm:flex'} relative items-center`}>
+              <div className={`${location.startsWith('/banking') || location.startsWith('/sugestoes') ? 'hidden' : location.startsWith('/mesas') ? 'flex flex-1' : 'hidden sm:flex'} relative items-center`}>
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
                   type="text"
                   placeholder="Buscar produtos, pedidos, clientes..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className={`pl-9 h-9 text-sm bg-background border-border/50 rounded-lg focus:ring-2 focus:ring-primary/20 ${searchQuery ? 'w-[310px] pr-14' : 'w-[310px] pr-3'}`}
+                  className={`pl-9 h-9 text-sm bg-background border-border/50 rounded-lg focus:ring-2 focus:ring-primary/20 w-full sm:w-[310px] ${searchQuery ? 'pr-14' : 'pr-3'}`}
                 />
                 {searchQuery && (
                   <button

@@ -2,7 +2,7 @@
  * Plan Subscription Database Functions
  * Gerencia gateway settings e assinaturas de planos via Paytime/Stripe.
  */
-import { eq, and, lte, desc, asc, sql, isNull, or } from "drizzle-orm";
+import { eq, ne, and, lte, desc, asc, sql, isNull, or } from "drizzle-orm";
 import { getDb } from "./db";
 import { gatewaySettings, planSubscriptions } from "../drizzle/schema";
 import type { GatewaySetting, InsertGatewaySetting, PlanSubscription, InsertPlanSubscription } from "../drizzle/schema";
@@ -234,6 +234,24 @@ export async function activateSubscription(
     renewalNotifiedAt: null,
     ...options,
   }).where(eq(planSubscriptions.id, id));
+
+  // After activating this subscription, expire all OTHER active/pending subs
+  // for the same establishment to prevent duplicate active subscriptions.
+  const activatedSub = await db.select().from(planSubscriptions).where(eq(planSubscriptions.id, id)).limit(1);
+  if (activatedSub[0]) {
+    await db.update(planSubscriptions).set({
+      status: "expired",
+      lastRenewalError: "Expirada automaticamente: nova assinatura ativada.",
+    }).where(and(
+      eq(planSubscriptions.establishmentId, activatedSub[0].establishmentId),
+      ne(planSubscriptions.id, id),
+      or(
+        eq(planSubscriptions.status, "active"),
+        eq(planSubscriptions.status, "pending"),
+        eq(planSubscriptions.status, "past_due"),
+      ),
+    ));
+  }
 }
 
 export async function getSubscriptionsDueForRenewal(): Promise<PlanSubscription[]> {

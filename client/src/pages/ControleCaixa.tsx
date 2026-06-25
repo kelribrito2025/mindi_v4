@@ -22,6 +22,7 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
@@ -31,6 +32,7 @@ import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import {
   DollarSign,
+  Hash,
   ArrowDownCircle,
   ArrowUpCircle,
   Wallet,
@@ -64,6 +66,7 @@ import {
   Settings,
   Wifi,
   Star,
+  MoreHorizontal,
 } from "lucide-react";
 import {
   Select,
@@ -96,6 +99,7 @@ const PAYMENT_METHOD_CONFIG: Record<string, { label: string; icon: any; color: s
 
 const HISTORY_PAGE_SIZE = 30;
 const SALES_PAGE_SIZE = 15;
+const COMM_PAGE_SIZE = 15;
 const MOV_PAGE_SIZE = 15;
 
 // ==================== PAINEL DE CONFIGURAÇÃO DE TAXAS ====================
@@ -279,7 +283,7 @@ export default function ControleCaixa() {
   const establishmentId = establishment?.id ?? null;
 
   // Estados de UI
-  const [activeHistoryTab, setActiveHistoryTab] = useState<"vendas" | "movimentacoes" | "historico" | "turno">("vendas");
+  const [activeHistoryTab, setActiveHistoryTab] = useState<"vendas" | "movimentacoes" | "historico" | "turno" | "comissoes">("vendas");
   const [showReminderSettings, setShowReminderSettings] = useState(false);
   const [showFeeSheet, setShowFeeSheet] = useState(false);
   const [showCloseDialog, setShowCloseDialog] = useState(false);
@@ -297,6 +301,7 @@ export default function ControleCaixa() {
   const [showBalance, setShowBalance] = useState(true);
   const [historyPage, setHistoryPage] = useState(1);
   const [salesPage, setSalesPage] = useState(1);
+  const [commPage, setCommPage] = useState(1);
   const [movPage, setMovPage] = useState(1);
   const [printReceiptData, setPrintReceiptData] = useState<any>(null);
 
@@ -391,6 +396,14 @@ export default function ControleCaixa() {
     { establishmentId: establishmentId!, sessionId: sessionId! },
     { enabled: !!establishmentId && !!sessionId, refetchInterval: 30000 }
   );
+
+  // Comissões da sessão
+  const { data: commissionsData } = trpc.cashRegister.getSessionCommissions.useQuery(
+    { establishmentId: establishmentId!, sessionId: sessionId! },
+    { enabled: !!establishmentId && !!sessionId, refetchInterval: 30000 }
+  );
+  // Destino da taxa de serviço
+  const { data: serviceChargeDestConfig } = trpc.tableSpaces.getServiceChargeDestination.useQuery();
 
   const { data: movements } = trpc.cashRegister.getMovements.useQuery(
     { establishmentId: establishmentId!, sessionId: sessionId! },
@@ -496,7 +509,9 @@ export default function ControleCaixa() {
     return movements.filter((m: any) => m.type === "suprimento").reduce((acc: number, m: any) => acc + (parseFloat(m.amount) || 0), 0);
   }, [movements]);
   const fundoInicial = parseFloat(currentSession?.openingAmount as any) || 0;
-  const saldoAtual = fundoInicial + totalVendas - totalSangrias + totalSuprimentos;
+  const totalComissoes = commissionsData?.total ?? 0;
+  const isCommissionForStaff = serviceChargeDestConfig?.destination !== "establishment";
+  const saldoAtual = fundoInicial + totalVendas - totalSangrias + totalSuprimentos - (isCommissionForStaff ? totalComissoes : 0);
 
   // Vendas em dinheiro (para saldo esperado na gaveta)
   const vendasDinheiro = useMemo(() => {
@@ -1294,35 +1309,71 @@ export default function ControleCaixa() {
         {/* ==================== ABAS: VENDAS / MOVIMENTAÇÕES / TURNO ==================== */}
         <div>
           <div className="border-b border-border/60 mb-6">
-            <nav className="flex gap-0 -mb-px">
+            <nav className="flex gap-0 -mb-px items-center">
+              {/* Abas sempre visíveis */}
               <button
                 onClick={() => setActiveHistoryTab("vendas")}
-                className={`relative whitespace-nowrap px-4 py-3 text-sm font-medium transition-colors ${activeHistoryTab === "vendas" ? "text-foreground" : "text-muted-foreground hover:text-foreground/80"}`}
+                className={`relative whitespace-nowrap px-3 sm:px-4 py-3 text-sm font-medium transition-colors ${activeHistoryTab === "vendas" ? "text-foreground" : "text-muted-foreground hover:text-foreground/80"}`}
               >
                 Vendas
                 {activeHistoryTab === "vendas" && <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-t-full" />}
               </button>
               <button
                 onClick={() => setActiveHistoryTab("movimentacoes")}
-                className={`relative whitespace-nowrap px-4 py-3 text-sm font-medium transition-colors ${activeHistoryTab === "movimentacoes" ? "text-foreground" : "text-muted-foreground hover:text-foreground/80"}`}
+                className={`relative whitespace-nowrap px-3 sm:px-4 py-3 text-sm font-medium transition-colors ${activeHistoryTab === "movimentacoes" ? "text-foreground" : "text-muted-foreground hover:text-foreground/80"}`}
               >
                 Movimentações
                 {activeHistoryTab === "movimentacoes" && <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-t-full" />}
               </button>
+              {isCommissionForStaff && (
+                <button
+                  onClick={() => setActiveHistoryTab("comissoes")}
+                  className={`relative whitespace-nowrap px-3 sm:px-4 py-3 text-sm font-medium transition-colors hidden sm:block ${activeHistoryTab === "comissoes" ? "text-foreground" : "text-muted-foreground hover:text-foreground/80"}`}
+                >
+                  Comissões
+                  {activeHistoryTab === "comissoes" && <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-t-full" />}
+                </button>
+              )}
+              {/* Abas visíveis apenas no desktop */}
               <button
                 onClick={() => setActiveHistoryTab("historico")}
-                className={`relative whitespace-nowrap px-4 py-3 text-sm font-medium transition-colors ${activeHistoryTab === "historico" ? "text-foreground" : "text-muted-foreground hover:text-foreground/80"}`}
+                className={`relative whitespace-nowrap px-3 sm:px-4 py-3 text-sm font-medium transition-colors hidden sm:block ${activeHistoryTab === "historico" ? "text-foreground" : "text-muted-foreground hover:text-foreground/80"}`}
               >
                 Histórico
                 {activeHistoryTab === "historico" && <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-t-full" />}
               </button>
               <button
                 onClick={() => setActiveHistoryTab("turno")}
-                className={`relative whitespace-nowrap px-4 py-3 text-sm font-medium transition-colors ${activeHistoryTab === "turno" ? "text-foreground" : "text-muted-foreground hover:text-foreground/80"}`}
+                className={`relative whitespace-nowrap px-3 sm:px-4 py-3 text-sm font-medium transition-colors hidden sm:block ${activeHistoryTab === "turno" ? "text-foreground" : "text-muted-foreground hover:text-foreground/80"}`}
               >
                 Turno
                 {activeHistoryTab === "turno" && <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-t-full" />}
               </button>
+              {/* Dropdown "Mais" visível apenas no mobile */}
+              <div className="sm:hidden">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className={`relative whitespace-nowrap px-3 py-3 text-sm font-medium transition-colors flex items-center gap-1 ${["comissoes", "historico", "turno"].includes(activeHistoryTab) ? "text-foreground" : "text-muted-foreground hover:text-foreground/80"}`}>
+                      {activeHistoryTab === "comissoes" ? "Comissões" : activeHistoryTab === "historico" ? "Histórico" : activeHistoryTab === "turno" ? "Turno" : "Mais"}
+                      <ChevronDown className="h-3.5 w-3.5" />
+                      {["comissoes", "historico", "turno"].includes(activeHistoryTab) && <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-t-full" />}
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="min-w-[140px]">
+                    {isCommissionForStaff && (
+                      <DropdownMenuItem onClick={() => setActiveHistoryTab("comissoes")} className={activeHistoryTab === "comissoes" ? "bg-accent" : ""}>
+                        Comissões
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem onClick={() => setActiveHistoryTab("historico")} className={activeHistoryTab === "historico" ? "bg-accent" : ""}>
+                      Histórico
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setActiveHistoryTab("turno")} className={activeHistoryTab === "turno" ? "bg-accent" : ""}>
+                      Turno
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </nav>
           </div>
 
@@ -1424,7 +1475,7 @@ export default function ControleCaixa() {
           {/* Tab: Movimentações */}
           {activeHistoryTab === "movimentacoes" && (
             <div className="bg-card rounded-xl border border-border/50 overflow-hidden">
-              {movements && movements.length > 0 ? (
+              {movements && movements.filter((m: any) => m.type !== "comissao").length > 0 ? (
                 <>
                   <div className="overflow-x-auto">
                     <table className="w-full">
@@ -1439,7 +1490,7 @@ export default function ControleCaixa() {
                       </thead>
                       <tbody>
                         {(() => {
-                          const movList = movements;
+                          const movList = movements.filter((m: any) => m.type !== "comissao");
                           const movTotalPages = Math.max(1, Math.ceil(movList.length / MOV_PAGE_SIZE));
                           const movStart = (movPage - 1) * MOV_PAGE_SIZE;
                           const movEnd = movStart + MOV_PAGE_SIZE;
@@ -1480,16 +1531,16 @@ export default function ControleCaixa() {
                   {/* Footer com paginação */}
                   <div className="px-4 py-3 border-t border-border/50 bg-muted/20 flex items-center justify-between">
                     <p className="text-xs text-muted-foreground">
-                      {Math.min((movPage - 1) * MOV_PAGE_SIZE + 1, movements.length)}-{Math.min(movPage * MOV_PAGE_SIZE, movements.length)} de {movements.length} movimentações
+                      {Math.min((movPage - 1) * MOV_PAGE_SIZE + 1, movements.filter((m: any) => m.type !== "comissao").length)}-{Math.min(movPage * MOV_PAGE_SIZE, movements.filter((m: any) => m.type !== "comissao").length)} de {movements.filter((m: any) => m.type !== "comissao").length} movimentações
                     </p>
-                    {movements.length > MOV_PAGE_SIZE && (
+                    {movements.filter((m: any) => m.type !== "comissao").length > MOV_PAGE_SIZE && (
                       <div className="flex items-center gap-2 shrink-0">
                         <Button variant="outline" size="sm" className="h-7 px-2" disabled={movPage <= 1} onClick={() => setMovPage(p => p - 1)}>
                           <ChevronLeft className="h-4 w-4" />
                           <span className="text-xs ml-1">Anterior</span>
                         </Button>
-                        <span className="text-xs text-muted-foreground">{movPage} / {Math.ceil(movements.length / MOV_PAGE_SIZE)}</span>
-                        <Button variant="outline" size="sm" className="h-7 px-2" disabled={movPage >= Math.ceil(movements.length / MOV_PAGE_SIZE)} onClick={() => setMovPage(p => p + 1)}>
+                        <span className="text-xs text-muted-foreground">{movPage} / {Math.ceil(movements.filter((m: any) => m.type !== "comissao").length / MOV_PAGE_SIZE)}</span>
+                        <Button variant="outline" size="sm" className="h-7 px-2" disabled={movPage >= Math.ceil(movements.filter((m: any) => m.type !== "comissao").length / MOV_PAGE_SIZE)} onClick={() => setMovPage(p => p + 1)}>
                           <span className="text-xs mr-1">Próxima</span>
                           <ChevronRight className="h-4 w-4" />
                         </Button>
@@ -1618,6 +1669,137 @@ export default function ControleCaixa() {
                     <p className="text-sm font-semibold text-foreground">{salesCount} vendas</p>
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {activeHistoryTab === "comissoes" && isCommissionForStaff && (
+            <div className="space-y-4">
+              {/* Card resumo */}
+              {commissionsData?.commissions && commissionsData.commissions.length > 0 && (
+                <div className="bg-card rounded-xl border border-border/50 p-5">
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="h-10 w-10 rounded-xl bg-red-100 dark:bg-red-500/15 flex items-center justify-center flex-shrink-0" style={{borderRadius: '12px'}}>
+                      <Receipt className="h-5 w-5 text-red-600 dark:text-red-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-base font-semibold text-foreground">Comissões (Garçons)</h3>
+                      <p className="text-xs text-muted-foreground">Deduzido do saldo do caixa</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
+                      <div className="h-9 w-9 rounded-full bg-red-50 dark:bg-red-500/10 flex items-center justify-center">
+                        <DollarSign className="h-4 w-4 text-red-600" />
+                      </div>
+                      <div>
+                        <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Total</p>
+                        <p className="text-sm font-semibold text-foreground">{formatCurrency(totalComissoes)}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
+                      <div className="h-9 w-9 rounded-full bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center">
+                        <Hash className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Registros</p>
+                        <p className="text-sm font-semibold text-foreground">{commissionsData?.count ?? 0}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {/* Tabela de comissões */}
+              <div className="bg-card rounded-xl border border-border/50 overflow-hidden">
+              {commissionsData?.commissions && commissionsData.commissions.length > 0 ? (
+                <>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-border/50 bg-muted/30">
+                          <th className="text-left p-4 text-sm font-medium text-muted-foreground">Comissão</th>
+                          <th className="text-left p-4 text-sm font-medium text-muted-foreground">Data</th>
+                          <th className="text-left p-4 text-sm font-medium text-muted-foreground">Horário</th>
+                          <th className="text-left p-4 text-sm font-medium text-muted-foreground">Pagamento</th>
+                          <th className="text-right p-4 text-sm font-medium text-muted-foreground">Valor</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(() => {
+                          const commList = commissionsData.commissions;
+                          const commStart = (commPage - 1) * COMM_PAGE_SIZE;
+                          const commEnd = commStart + COMM_PAGE_SIZE;
+                          const paginatedComm = commList.slice(commStart, commEnd);
+                          return paginatedComm;
+                        })().map((c: any) => (
+                          <tr key={c.id} className="border-b border-border/30 hover:bg-muted/20 transition-colors">
+                            <td className="p-4">
+                              <div className="flex items-center gap-3">
+                                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-red-500 to-red-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                                  <DollarSign className="h-4 w-4" />
+                                </div>
+                                <div>
+                                  <p className="font-medium text-sm">{c.reason || "Taxa de serviço"}</p>
+                                  <p className="text-xs text-muted-foreground">Garçons</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="p-4">
+                              <span className="text-sm text-muted-foreground">{new Date(c.createdAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}</span>
+                            </td>
+                            <td className="p-4">
+                              <span className="text-sm text-muted-foreground">{new Date(c.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
+                            </td>
+                            <td className="p-4">
+                              {(() => {
+                                const pm = c.paymentMethod || "cash";
+                                const pmMap: Record<string, string> = { dinheiro: "cash", cartao_credito: "card", cartao_debito: "card", pix_estatico: "pix" };
+                                const mapped = pmMap[pm] || pm;
+                                const config = PAYMENT_METHOD_CONFIG[mapped] || { label: pm, icon: Banknote, color: "text-gray-600" };
+                                const Icon = config.icon;
+                                return (
+                                  <div className="flex items-center gap-2">
+                                    <Icon className={`h-4 w-4 ${config.color}`} />
+                                    <span className="text-sm">{config.label}</span>
+                                  </div>
+                                );
+                              })()}
+                            </td>
+                            <td className="p-4 text-right">
+                              <span className="text-sm font-semibold text-red-600">{formatCurrency(parseFloat(c.amount))}</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {/* Footer com paginação */}
+                  <div className="px-4 py-3 border-t border-border/50 bg-muted/20 flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">
+                      {Math.min((commPage - 1) * COMM_PAGE_SIZE + 1, commissionsData.commissions.length)}-{Math.min(commPage * COMM_PAGE_SIZE, commissionsData.commissions.length)} de {commissionsData.commissions.length} comissões
+                    </p>
+                    {commissionsData.commissions.length > COMM_PAGE_SIZE && (
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button variant="outline" size="sm" className="h-7 px-2" disabled={commPage <= 1} onClick={() => setCommPage(p => p - 1)}>
+                          <ChevronLeft className="h-4 w-4" />
+                          <span className="text-xs ml-1">Anterior</span>
+                        </Button>
+                        <span className="text-xs text-muted-foreground">{commPage} / {Math.ceil(commissionsData.commissions.length / COMM_PAGE_SIZE)}</span>
+                        <Button variant="outline" size="sm" className="h-7 px-2" disabled={commPage >= Math.ceil(commissionsData.commissions.length / COMM_PAGE_SIZE)} onClick={() => setCommPage(p => p + 1)}>
+                          <span className="text-xs mr-1">Próxima</span>
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                  <Receipt className="h-10 w-10 mb-3 opacity-40" />
+                  <p className="font-medium">Nenhuma comissão registrada neste turno</p>
+                  <p className="text-sm mt-1">Comissões são registradas automaticamente ao fechar mesas</p>
+                </div>
+              )}
               </div>
             </div>
           )}
@@ -2018,6 +2200,13 @@ export default function ControleCaixa() {
                       );
                     })()}
                     <div className="border-t border-dashed border-border my-2"></div>
+                    {isCommissionForStaff && totalComissoes > 0 && (
+                      <>
+                        <div className="font-bold text-xs mb-1 text-amber-600">COMISSÕES (GARÇONS)</div>
+                        <div className="flex justify-between text-xs py-0.5"><span>Taxa de serviço ({commissionsData?.count ?? 0}x):</span><span className="text-amber-600">- {formatCurrency(totalComissoes)}</span></div>
+                        <div className="border-t border-dashed border-border my-2"></div>
+                      </>
+                    )}
                     <div className="flex justify-between text-xs py-1 px-2 bg-foreground text-background font-bold rounded"><span>SALDO FINAL:</span><span>{formatCurrency(printReceiptData.closingAmount || 0)}</span></div>
                     {printReceiptData.salesCount > 0 && (
                       <>
@@ -2108,6 +2297,10 @@ export default function ControleCaixa() {
                       doc.write(`<div class="divider"></div>`);
                       doc.write(`<div class="row bold"><span>Total Vendas (${printReceiptData.salesCount}x):</span><span>${formatCurrency(printReceiptData.salesTotal)}</span></div>`);
                       doc.write(`<div class="divider"></div>`);
+                      if (isCommissionForStaff && totalComissoes > 0) {
+                        doc.write(`<div class="row" style="color:#d97706"><span>Comissões garçons (${commissionsData?.count ?? 0}x):</span><span>- ${formatCurrency(totalComissoes)}</span></div>`);
+                        doc.write(`<div class="divider"></div>`);
+                      }
                       doc.write(`<div class="total-box"><span>SALDO FINAL:</span><span>${formatCurrency(printReceiptData.closingAmount || 0)}</span></div>`);
                     }
                     if (printReceiptData.isHistoryPrint) {
@@ -2173,6 +2366,9 @@ export default function ControleCaixa() {
                           reason: m.reason || null,
                           createdAt: m.createdAt || null,
                         })),
+                        commissionsTotal: totalComissoes,
+                        commissionsCount: commissionsData?.count ?? 0,
+                        commissionDestination: serviceChargeDestConfig?.destination || "staff",
                       });
                     }}>
                       <div className="flex flex-col">

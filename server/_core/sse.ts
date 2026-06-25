@@ -75,6 +75,8 @@ export function removeConnection(establishmentId: number, res: Response): void {
     logger.info(`[SSE] Conexão removida do estabelecimento ${establishmentId}. Restantes: ${establishmentConnections.size}`);
     
     if (establishmentConnections.size === 0) {
+      logger.warn(`[SSE-AUDIT] Estabelecimento ${establishmentId} ficou SEM conexões SSE ativas. Pedidos não serão notificados em tempo real.`);
+      import("./../server/adminDb").then(m => m.insertSseConnectivityLog({ establishmentId, event: "disconnected", message: `Estabelecimento ficou sem conexões SSE ativas` })).catch(() => {});
       connections.delete(establishmentId);
     }
   }
@@ -114,6 +116,10 @@ export function sendEvent(establishmentId: number, eventType: string, data: unkn
 export function notifyNewOrder(establishmentId: number, order: unknown): void {
   logger.info(`[SSE] notifyNewOrder chamado para establishmentId: ${establishmentId}`);
   logger.info(`[SSE] Conexões ativas para este estabelecimento: ${connections.get(establishmentId)?.size || 0}`);
+  if (!connections.has(establishmentId) || connections.get(establishmentId)!.size === 0) {
+    logger.warn(`[SSE-AUDIT] ALERTA: Pedido novo para estabelecimento ${establishmentId} mas NENHUMA conexão SSE ativa! O dono NÃO será notificado em tempo real.`);
+    import("./../server/adminDb").then(m => m.insertSseConnectivityLog({ establishmentId, event: "order_missed", message: `Pedido novo chegou sem conexão SSE ativa` })).catch(() => {});
+  }
   // Log para debug do source do pedido
   const orderData = order as { source?: string };
   logger.info(`[SSE] Source do pedido: ${orderData?.source || 'não definido'}`);
@@ -234,6 +240,9 @@ export function notifyPrintCashReceipt(establishmentId: number, receiptData: {
   closingAmount: number;
   salesTotal: number;
   salesCount: number;
+  commissionsTotal?: number;
+  commissionsCount?: number;
+  commissionDestination?: string;
   paymentBreakdown: Array<{ method: string; total: number; count: number }>;
   movements: Array<{ type: string; amount: string; reason: string | null; createdAt: any }>;
   beepOnPrint?: boolean;

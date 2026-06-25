@@ -27,7 +27,7 @@ import {
   aiImageCreditLogs, collaborators,
   whatsappConversations, whatsappMessages,
   scheduledClosures,
-  chatShortcuts, orderLogs, paytimeTransactions,
+  chatShortcuts, orderLogs, paytimeTransactions, sseConnectivityLogs,
   planPrices, planFeatures, planSubscriptions,
 } from "../drizzle/schema";
 import { logger } from "./_core/logger";
@@ -1297,4 +1297,76 @@ export async function getPaymentHistory(establishmentId: number) {
     .where(eq(planSubscriptions.establishmentId, establishmentId))
     .orderBy(desc(planSubscriptions.createdAt));
   return subs;
+}
+
+// ============ SSE CONNECTIVITY LOGS ============
+export async function insertSseConnectivityLog(data: {
+  establishmentId: number;
+  event: "disconnected" | "order_missed" | "reconnected";
+  message: string;
+  orderId?: number;
+  details?: Record<string, unknown>;
+}) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(sseConnectivityLogs).values({
+    establishmentId: data.establishmentId,
+    event: data.event,
+    message: data.message,
+    orderId: data.orderId || null,
+    details: data.details || null,
+  });
+}
+
+export async function getSseConnectivityLogs(filters: {
+  establishmentId?: number;
+  event?: "disconnected" | "order_missed" | "reconnected";
+  limit?: number;
+  offset?: number;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions: any[] = [];
+  if (filters.establishmentId) {
+    conditions.push(eq(sseConnectivityLogs.establishmentId, filters.establishmentId));
+  }
+  if (filters.event) {
+    conditions.push(eq(sseConnectivityLogs.event, filters.event));
+  }
+  const rows = await db
+    .select({
+      id: sseConnectivityLogs.id,
+      establishmentId: sseConnectivityLogs.establishmentId,
+      event: sseConnectivityLogs.event,
+      message: sseConnectivityLogs.message,
+      orderId: sseConnectivityLogs.orderId,
+      details: sseConnectivityLogs.details,
+      createdAt: sseConnectivityLogs.createdAt,
+    })
+    .from(sseConnectivityLogs)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(desc(sseConnectivityLogs.createdAt))
+    .limit(filters.limit ?? 100)
+    .offset(filters.offset ?? 0);
+  return rows;
+}
+
+export async function getSseConnectivityLogsCount(filters: {
+  establishmentId?: number;
+  event?: "disconnected" | "order_missed" | "reconnected";
+}) {
+  const db = await getDb();
+  if (!db) return 0;
+  const conditions: any[] = [];
+  if (filters.establishmentId) {
+    conditions.push(eq(sseConnectivityLogs.establishmentId, filters.establishmentId));
+  }
+  if (filters.event) {
+    conditions.push(eq(sseConnectivityLogs.event, filters.event));
+  }
+  const result = await db
+    .select({ count: count() })
+    .from(sseConnectivityLogs)
+    .where(conditions.length > 0 ? and(...conditions) : undefined);
+  return result[0]?.count ?? 0;
 }

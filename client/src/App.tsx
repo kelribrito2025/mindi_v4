@@ -87,6 +87,7 @@ const AdminFeedbacks = lazy(() => import("./pages/admin/AdminFeedbacks"));
 const AdminAuditLog = lazy(() => import("./pages/admin/AdminAuditLog"));
 const AdminChangelog = lazy(() => import("./pages/admin/AdminChangelog"));
 const AdminOrderLogs = lazy(() => import("./pages/admin/AdminOrderLogs"));
+const AdminSSELogs = lazy(() => import("./pages/admin/AdminSSELogs"));
 
 // ─── Suspense fallback (same loading screen as login) ───────────────────────
 function PageLoader() {
@@ -205,6 +206,7 @@ const lazyPageImports = [
   () => import("./pages/admin/AdminAuditLog"),
   () => import("./pages/admin/AdminChangelog"),
   () => import("./pages/admin/AdminOrderLogs"),
+  () => import("./pages/admin/AdminSSELogs"),
 ];
 
 function usePrefetchPages() {
@@ -410,6 +412,7 @@ function Router() {
       <Route path="/admin/audit-log">{() => <AdminAuditLog />}</Route>
       <Route path="/admin/changelog">{() => <AdminChangelog />}</Route>
       <Route path="/admin/order-logs">{() => <AdminOrderLogs />}</Route>
+      <Route path="/admin/sse-logs">{() => <AdminSSELogs />}</Route>
       
       {/* Admin routes - com NewOrdersProvider */}
       <Route path="/">

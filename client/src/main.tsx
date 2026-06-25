@@ -158,7 +158,7 @@ if ("serviceWorker" in navigator) {
   });
 
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js?v=20260518-push-v4", { updateViaCache: "none" })
+    navigator.serviceWorker.register("/sw.js?v=20260619-cache-bust", { updateViaCache: "none" })
       .then((registration) => {
         console.log("[PWA] Service Worker registrado:", registration.scope);
 

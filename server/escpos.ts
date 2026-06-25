@@ -797,55 +797,71 @@ export function generatePlainTextReceipt(
 
   let receipt = '';
   const estName = normalize(establishment?.name || 'RESTAURANTE').toUpperCase();
-  
-  // ===== CABEÇALHO =====
-  receipt += center(estName) + '\n';
+
+  // ===== CABECALHO COM ASTERISCOS =====
+  const starLine = '*'.repeat(charsPerLine);
+  const starBoxLine = (text: string) => {
+    const inner = charsPerLine - 4; // "* " + content + " *"
+    const pad = Math.max(0, inner - text.length);
+    const padLeft = Math.floor(pad / 2);
+    const padRight = pad - padLeft;
+    return `* ${' '.repeat(padLeft)}${text}${' '.repeat(padRight)} *`;
+  };
+
+  receipt += starLine + '\n';
+  receipt += starBoxLine(estName) + '\n';
+  receipt += starLine + '\n';
   receipt += '\n';
 
-  // Linha condensada: #P99 23/02/2026 - 23:16 | ENTREGA |
+  // Informacoes do pedido
   const isScheduled = (order as any).isScheduled || (order as any).scheduledAt;
   const badgeText = isScheduled ? 'AGENDADO' : (deliveryTypeText[order.deliveryType] || 'PEDIDO');
-  const headerLine = `#${order.orderNumber} ${formatDate(order.createdAt)} | ${badgeText} |`;
-  receipt += center(headerLine) + '\n';
-  receipt += dividerDouble + '\n';
 
-  // Seção de agendamento
+  receipt += `Pedido: #${order.orderNumber}\n`;
+  receipt += `Data: ${formatDate(order.createdAt)}\n`;
+  receipt += `Tipo: ${badgeText}\n`;
+
+  // Secao de agendamento
   if (isScheduled && (order as any).scheduledAt) {
     const scheduledDate = new Date((order as any).scheduledAt);
     const schedDateStr = scheduledDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: timezone });
     const schedTimeStr = scheduledDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: timezone });
-    receipt += `AGENDADO PARA: ${schedDateStr} - ${schedTimeStr}\n`;
+    receipt += `Agendado para: ${schedDateStr} - ${schedTimeStr}\n`;
+  }
+
+  receipt += '\n';
+
+  // Pedidos de mesa: nao exibir dados do cliente, endereco e pagamento
+  const isTableOrder = order.deliveryType === 'dine_in' && order.customerName?.startsWith('Mesa');
+
+  // ===== CLIENTE =====
+  if (!isTableOrder && (order.customerName || order.customerPhone)) {
+    receipt += dividerSingle + '\n';
+    receipt += 'CLIENTE\n';
+    receipt += `Nome: ${normalize(order.customerName || 'Nao informado')}\n`;
+    if (order.customerPhone) {
+      receipt += `Tel:  ${formatPhone(order.customerPhone)}\n`;
+    }
     receipt += dividerSingle + '\n';
   }
 
-  // Pedidos de mesa: não exibir dados do cliente, endereço e pagamento
-  const isTableOrder = order.deliveryType === 'dine_in' && order.customerName?.startsWith('Mesa');
-  
-  // ===== CLIENTE =====
-  if (!isTableOrder && (order.customerName || order.customerPhone)) {
-    receipt += `CLIENTE: ${normalize(order.customerName || 'Nao informado')}\n`;
-    if (order.customerPhone) {
-      receipt += `Tel: ${formatPhone(order.customerPhone)}\n`;
-    }
-    receipt += '\n';
-  }
-
-  // ===== ENDEREÇO =====
+  // ===== ENDERECO =====
   if (!isTableOrder && order.deliveryType === 'delivery' && order.address) {
+    receipt += '\n';
     receipt += 'ENDERECO\n';
     receipt += normalize(order.address) + '\n';
     if (order.addressComplement) receipt += normalize(order.addressComplement) + '\n';
     if (order.neighborhood) receipt += normalize(order.neighborhood) + '\n';
+    receipt += '\n';
   }
-  receipt += dividerSingle + '\n';
 
   // ===== ITENS =====
+  receipt += '\n';
   receipt += 'ITENS\n';
-
+  receipt += dividerSingle + '\n';
   for (const item of order.items) {
-    // Linha do item: quantidade x nome + preço na mesma linha
+    // Linha do item: quantidade x nome + preco na mesma linha
     const itemName = `${item.quantity}x ${normalize(item.productName).toUpperCase()}`;
-
     // Verifica se tem complementos
     let hasComplements = false;
     let parsedComplements: any[] = [];
@@ -861,9 +877,8 @@ export function generatePlainTextReceipt(
         }
       } catch (e) {}
     }
-
     if (hasComplements) {
-      // Calcula preço base do item (totalPrice - soma dos complementos)
+      // Calcula preco base do item (totalPrice - soma dos complementos)
       let complementsTotal = 0;
       for (const comp of parsedComplements) {
         if (comp.items && Array.isArray(comp.items)) {
@@ -876,12 +891,10 @@ export function generatePlainTextReceipt(
           complementsTotal += comp.price * qty;
         }
       }
-      // Preço total do item (base + complementos)
+      // Preco total do item (base + complementos)
       const itemTotalPrice = formatCurrency(item.totalPrice);
-
-      // Nome do item + preço total na mesma linha
+      // Nome do item + preco total na mesma linha
       receipt += leftRight(itemName, itemTotalPrice) + '\n';
-
       // Complementos com pontos
       for (const comp of parsedComplements) {
         if (comp.items && Array.isArray(comp.items)) {
@@ -906,28 +919,27 @@ export function generatePlainTextReceipt(
           }
         }
       }
-      // NÃO mostra total do item abaixo dos complementos (evita confusão)
     } else {
-      // Sem complementos: nome e preço na mesma linha
+      // Sem complementos: nome e preco na mesma linha
       receipt += leftRight(itemName, formatCurrency(item.totalPrice)) + '\n';
     }
-
-    // Observações do item
+    // Observacoes do item
     if (item.notes) {
       receipt += `  Obs: ${normalize(item.notes)}\n`;
     }
   }
-
-  // ===== OBSERVAÇÕES DO PEDIDO =====
-  if (order.notes) {
-    receipt += dividerSingle + '\n';
-    receipt += 'OBS DO PEDIDO:\n';
-    receipt += normalize(order.notes) + '\n';
-  }
-
   receipt += dividerSingle + '\n';
 
+  // ===== OBSERVACOES DO PEDIDO =====
+  if (order.notes) {
+    receipt += '\n';
+    receipt += 'OBS DO PEDIDO:\n';
+    receipt += normalize(order.notes) + '\n';
+    receipt += '\n';
+  }
+
   // ===== TOTAIS =====
+  receipt += '\n';
   receipt += leftRight('Subtotal:', formatCurrency(order.subtotal)) + '\n';
   if (order.deliveryFee && order.deliveryFee > 0) {
     receipt += leftRight('Taxa entrega:', formatCurrency(order.deliveryFee)) + '\n';
@@ -936,20 +948,22 @@ export function generatePlainTextReceipt(
     receipt += leftRight('Desconto:', `-${formatCurrency(order.discount)}`) + '\n';
   }
   receipt += dividerDouble + '\n';
-  receipt += leftRight('TOTAL:', formatCurrency(order.total)) + '\n';
+  receipt += leftRight('TOTAL A PAGAR:', formatCurrency(order.total)) + '\n';
   receipt += dividerDouble + '\n';
 
   // ===== PAGAMENTO =====
   if (!isTableOrder) {
+    receipt += '\n';
     if (order.paymentMethod === 'card_online') {
-      receipt += 'PAGAMENTO: PGTO CONFIRMADO - CARTAO ONLINE\n';
+      receipt += 'FORMA DE PAGAMENTO: CARTAO ONLINE\n';
+      receipt += 'STATUS: CONFIRMADO\n';
     } else if (order.paymentMethod === 'pix_online') {
-      receipt += 'PAGAMENTO: PGTO CONFIRMADO - PIX ONLINE\n';
+      receipt += 'FORMA DE PAGAMENTO: PIX ONLINE\n';
+      receipt += 'STATUS: CONFIRMADO\n';
     } else {
       const pmText = paymentMethodText[order.paymentMethod || ''] || (order.paymentMethod || 'NAO INFORMADO').toUpperCase();
-      receipt += `PAGAMENTO: ${pmText}\n`;
+      receipt += `FORMA DE PAGAMENTO: ${pmText}\n`;
     }
-
     if (order.paymentMethod === 'cash') {
       if (order.changeFor && order.changeFor > order.total) {
         const change = order.changeFor - order.total;
@@ -961,10 +975,12 @@ export function generatePlainTextReceipt(
     }
   }
 
-  // ===== RODAPÉ =====
+  // ===== RODAPE COM ASTERISCOS =====
   receipt += '\n';
-  receipt += center('Obrigado pela preferencia!') + '\n';
-  receipt += center('Volte sempre!') + '\n';
+  receipt += starLine + '\n';
+  receipt += starBoxLine('Obrigado pela preferencia!') + '\n';
+  receipt += starBoxLine('Volte sempre! :)') + '\n';
+  receipt += starLine + '\n';
   receipt += '\n\n\n';
 
   return receipt;
@@ -980,6 +996,9 @@ export function generateCashReceiptText(
     closingAmount: number;
     salesTotal: number;
     salesCount: number;
+    commissionsTotal?: number;
+    commissionsCount?: number;
+    commissionDestination?: string;
     paymentBreakdown: Array<{ method: string; total: number; count: number }>;
     movements: Array<{ type: string; amount: string; reason: string | null; createdAt: any }>;
   },
@@ -1082,6 +1101,10 @@ export function generateCashReceiptText(
 
   receipt += dividerSingle + '\n';
   receipt += leftRight(`Total Vendas (${data.salesCount}x):`, formatCurrency(data.salesTotal)) + '\n';
+  // Linha de comissões (se destino = garçons)
+  if (data.commissionDestination === 'staff' && (data.commissionsTotal || 0) > 0) {
+    receipt += leftRight(`Comissoes garcons (${data.commissionsCount || 0}x):`, `- ${formatCurrency(data.commissionsTotal || 0)}`) + '\n';
+  }
   receipt += dividerDouble + '\n';
   receipt += leftRight('SALDO FINAL:', formatCurrency(data.closingAmount)) + '\n';
   receipt += dividerDouble + '\n';

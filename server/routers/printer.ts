@@ -646,6 +646,9 @@ export const printerRouter = router({
           reason: z.string().nullable(),
           createdAt: z.any(),
         })),
+        commissionsTotal: z.number().optional(),
+        commissionsCount: z.number().optional(),
+        commissionDestination: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         await assertEstablishmentOwnership(ctx.user.id, input.establishmentId);
@@ -666,6 +669,9 @@ export const printerRouter = router({
           closingAmount: input.closingAmount,
           salesTotal: input.salesTotal,
           salesCount: input.salesCount,
+          commissionsTotal: input.commissionsTotal,
+          commissionsCount: input.commissionsCount,
+          commissionDestination: input.commissionDestination,
           paymentBreakdown: input.paymentBreakdown,
           movements: input.movements,
           beepOnPrint: (printerSettings as any)?.mindiBeepOnPrint ?? printerSettings?.beepOnPrint ?? false,

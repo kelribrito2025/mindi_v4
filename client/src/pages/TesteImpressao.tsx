@@ -1071,7 +1071,6 @@ export default function TesteImpressao() {
                     }}>
                       <span style={{ fontWeight: titleFontWeight, fontSize: `${itemFontSize}px`, display: 'inline-flex', alignItems: 'center' }}>
                         <img loading="lazy" src="/client-icon.png" alt="" style={{ width: '13px', height: '13px', marginRight: '4px' }} />
-                        Cliente
                       </span>
                       <span style={{ fontWeight: titleFontWeight, fontSize: `${itemFontSize}px` }}>{sampleOrder.customerName} - {sampleOrder.customerPhone}</span>
                     </div>

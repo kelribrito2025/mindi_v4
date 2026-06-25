@@ -95,7 +95,7 @@ import { Input } from "@/components/ui/input";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { usePreference } from "@/hooks/usePreference";
 import { useLocation } from "wouter";
-import { useOrdersSSE } from "@/hooks/useOrdersSSE";
+import { useOrdersSSE, useSSEVisibilityReconnect } from "@/hooks/useOrdersSSE";
 import { normalizeSSEOrder, insertOrderIntoList } from "@/lib/normalizeSSEOrder";
 import { useNewOrders } from "@/contexts/NewOrdersContext";
 import { formatDistanceToNow, format } from "date-fns";
@@ -756,7 +756,12 @@ function getTodayStartInTimezone(tz: string): Date {
     const mins = parseInt(offsetMatch[3] || '0');
     offsetMinutes = sign * (hours * 60 + mins);
   }
-  const todayStart = new Date(Date.UTC(year, month - 1, day, 0, 0, 0) - offsetMinutes * 60 * 1000);
+  // Reset às 05:00 local em vez de meia-noite
+  const todayStart = new Date(Date.UTC(year, month - 1, day, 5, 0, 0) - offsetMinutes * 60 * 1000);
+  // Se agora for antes das 05:00 local, considerar o dia anterior
+  if (now < todayStart) {
+    todayStart.setDate(todayStart.getDate() - 1);
+  }
   return todayStart;
 }
 
@@ -1120,6 +1125,7 @@ export default function Pedidos() {
     { 
       enabled: !!establishmentId && establishmentId > 0,
       refetchInterval: false,
+      refetchOnWindowFocus: false, // Disabled: useSSEVisibilityReconnect handles refetch on focus
     }
   );
 
@@ -1166,7 +1172,7 @@ export default function Pedidos() {
   }, [refetchAll]);
 
   // Hook SSE para receber pedidos em tempo real
-  const { status: sseStatus, isConnected: sseConnected } = useOrdersSSE({
+  const { status: sseStatus, isConnected: sseConnected, reconnect: sseReconnect } = useOrdersSSE({
     establishmentId: establishmentId ?? undefined,
     onNewOrder: handleNewOrder,
     onOrderUpdate: handleOrderUpdate,
@@ -1175,14 +1181,35 @@ export default function Pedidos() {
     enabled: !!establishmentId && establishmentId > 0,
   });
 
-  // Fallback: polling a cada 30 segundos se SSE não estiver conectado
+  // Reconectar SSE e refetch ao voltar para a aba
+  useSSEVisibilityReconnect(sseStatus, sseReconnect, refetchAll);
+
+  // Ref para detectar novos pedidos via polling (tocar som quando SSE está desconectado)
+  const prevOrderCountRef = useRef<number>(0);
+  useEffect(() => {
+    if (!allOrdersData?.orders) return;
+    const currentCount = allOrdersData.orders.filter((o: any) => o.status === "new").length;
+    if (prevOrderCountRef.current > 0 && currentCount > prevOrderCountRef.current && !sseConnected) {
+      // Novos pedidos detectados via polling - tocar som de alerta
+      console.log("[Pedidos] Novos pedidos detectados via polling! Tocando alerta...");
+      try {
+        const event = new CustomEvent("new-order-notification", { detail: { source: "polling" } });
+        window.dispatchEvent(event);
+      } catch (e) {
+        console.error("[Pedidos] Erro ao disparar evento de som:", e);
+      }
+    }
+    prevOrderCountRef.current = currentCount;
+  }, [allOrdersData?.orders, sseConnected]);
+
+  // Fallback: polling a cada 10 segundos se SSE não estiver conectado
   useEffect(() => {
     if (!establishmentId || sseConnected) return;
     
     const interval = setInterval(() => {
-      console.log("[Pedidos] Polling fallback - SSE não conectado");
+      console.log("[Pedidos] Polling fallback (30s) - SSE desconectado");
       refetchAll();
-    }, 30000);
+    }, 30000); // Polling moderado: 30s quando SSE desconectado
     
     return () => clearInterval(interval);
   }, [establishmentId, sseConnected, refetchAll]);
@@ -2570,6 +2597,17 @@ export default function Pedidos() {
   return (
     <AdminLayout>
       <div className="p-4 sm:p-6">
+      {/* Banner de SSE desconectado */}
+      {!sseConnected && establishmentId && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <WifiOff className="h-4 w-4 shrink-0" />
+          <span className="font-medium">Conexão em tempo real perdida.</span>
+          <span className="text-amber-600">Novos pedidos serão verificados a cada 10 segundos. Verifique sua internet.</span>
+          <button onClick={sseReconnect} className="ml-auto shrink-0 rounded bg-amber-600 px-3 py-1 text-xs font-medium text-white hover:bg-amber-700 transition-colors">
+            Reconectar
+          </button>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-6">
         <PageHeader
           title="Pedidos"
@@ -3351,6 +3389,8 @@ export default function Pedidos() {
       {/* Order Details Sidebar */}
       <Sheet open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
         <SheetContent side="right" className={`w-full p-0 overflow-hidden flex flex-row transition-all duration-300 ${complementModalProduct ? 'sm:max-w-[900px]' : 'sm:max-w-md'}`} hideCloseButton>
+          <SheetTitle className="sr-only">Detalhes do pedido</SheetTitle>
+          <SheetDescription className="sr-only">Painel lateral com detalhes do pedido selecionado</SheetDescription>
           {/* Painel de complementos inline - aparece à esquerda */}
           {complementModalProduct && (
             <div className="w-full sm:w-[420px] shrink-0 border-r border-border/50 flex flex-col bg-background overflow-hidden">

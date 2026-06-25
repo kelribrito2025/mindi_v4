@@ -609,7 +609,7 @@ export default function Login() {
           <>
             {/* Email with autocomplete */}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-semibold text-foreground">
+              <Label htmlFor="email" className="text-sm font-medium text-muted-foreground">
                 Email
               </Label>
               <div className="relative">
@@ -665,7 +665,7 @@ export default function Login() {
             {/* Password */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-sm font-semibold text-foreground">
+                <Label htmlFor="password" className="text-sm font-medium text-muted-foreground">
                   Senha
                 </Label>
                 <Link href="/esqueci-senha" className="text-sm font-medium text-primary hover:text-primary/80 transition-colors">

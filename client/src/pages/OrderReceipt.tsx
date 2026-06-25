@@ -1283,7 +1283,7 @@ export default function OrderReceipt() {
           {/* INFO STRIP — Informações rápidas em 3 colunas           */}
           {/* ====================================================== */}
           <div className="info-strip">
-            <InfoStripItem label="Cliente" value={order.customerName || "Cliente"} />
+            <InfoStripItem label="☆" value={order.customerName || "—"} />
             <InfoStripItem label="Pagamento" value={paymentLabel(order.paymentMethod)} />
             <InfoStripItem label="Tipo" value={deliveryLabel(order.deliveryType)} />
           </div>

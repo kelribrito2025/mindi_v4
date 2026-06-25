@@ -84,4 +84,21 @@ export const tableSpacesRouter = router({
       await db.updateEstablishment(establishment.id, { serviceChargePercent: input.percent } as any);
       return { success: true };
     }),
+  // Obter destino da taxa de serviço
+  getServiceChargeDestination: protectedProcedure.query(async ({ ctx }) => {
+    const establishment = await db.getEstablishmentByUserId(ctx.user.id);
+    if (!establishment) return { destination: "establishment" };
+    return { destination: (establishment as any).serviceChargeDestination || "establishment" };
+  }),
+  // Atualizar destino da taxa de serviço
+  updateServiceChargeDestination: protectedProcedure
+    .input(z.object({
+      destination: z.enum(["establishment", "staff"]),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const establishment = await db.getEstablishmentByUserId(ctx.user.id);
+      if (!establishment) throw new TRPCError({ code: "NOT_FOUND", message: "Estabelecimento não encontrado" });
+      await db.updateEstablishment(establishment.id, { serviceChargeDestination: input.destination } as any);
+      return { success: true };
+    }),
 });

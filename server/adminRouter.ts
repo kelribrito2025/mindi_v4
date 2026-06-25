@@ -239,6 +239,63 @@ export const adminRouter = router({
         });
         return { success: true };
       }),
+    changeBillingDate: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        newDate: z.string(), // ISO date string (YYYY-MM-DD)
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { getActiveSubscription, updateSubscriptionById } = await import("./planSubscriptionDb");
+        
+        // Parse the new billing date
+        const newBillingDate = new Date(input.newDate + "T12:00:00.000Z");
+        if (isNaN(newBillingDate.getTime())) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Data inválida." });
+        }
+        
+        // Get active subscription
+        const activeSub = await getActiveSubscription(input.id);
+        if (!activeSub) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Nenhuma assinatura ativa encontrada para este estabelecimento." });
+        }
+        
+        // Calculate new period: newDate is the END of current period (next billing)
+        // currentPeriodStart = newDate - 1 month (or 1 year for annual)
+        const periodStart = new Date(newBillingDate);
+        if (activeSub.billingPeriod === "annual") {
+          periodStart.setFullYear(periodStart.getFullYear() - 1);
+        } else {
+          periodStart.setMonth(periodStart.getMonth() - 1);
+        }
+        
+        // Update subscription dates
+        await updateSubscriptionById(activeSub.id, {
+          currentPeriodStart: periodStart,
+          currentPeriodEnd: newBillingDate,
+          nextRenewalAt: newBillingDate,
+          renewalNotifiedAt: null, // Reset notification so it will be re-sent at the right time
+          renewalAttempts: 0,
+          lastRenewalError: null,
+        });
+        
+        // Also update planExpiresAt on the establishment
+        const { getDb: getDbFn } = await import("./db");
+        const { establishments } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        const db = await getDbFn();
+        await db.update(establishments)
+          .set({ planExpiresAt: newBillingDate })
+          .where(eq(establishments.id, input.id));
+        
+        await adminDb.logAdminAction({
+          adminId: ctx.admin.userId, adminEmail: ctx.admin.email,
+          action: "change_billing_date", targetType: "establishment", targetId: input.id,
+          details: { newDate: input.newDate, subscriptionId: activeSub.id },
+        });
+        
+        logger.info(`[Admin] Changed billing date for establishment ${input.id} to ${input.newDate} (sub: ${activeSub.id})`);
+        return { success: true };
+      }),
 
     impersonate: adminProcedure
       .input(z.object({ id: z.number() }))
@@ -774,6 +831,51 @@ export const adminRouter = router({
         return { success: true };
       }),
   }),
-});
 
+  // ============ SSE CONNECTIVITY LOGS ============
+  sseConnectivity: router({
+    list: adminProcedure
+      .input(z.object({
+        establishmentId: z.number().optional(),
+        event: z.enum(["disconnected", "order_missed", "reconnected"]).optional(),
+        limit: z.number().min(1).max(200).default(100),
+        offset: z.number().min(0).default(0),
+      }).optional())
+      .query(async ({ input }) => {
+        const filters = input ?? {} as NonNullable<typeof input>;
+        const [logs, total] = await Promise.all([
+          adminDb.getSseConnectivityLogs({
+            establishmentId: filters.establishmentId,
+            event: filters.event,
+            limit: filters.limit ?? 100,
+            offset: filters.offset ?? 0,
+          }),
+          adminDb.getSseConnectivityLogsCount({
+            establishmentId: filters.establishmentId,
+            event: filters.event,
+          }),
+        ]);
+        return { logs, total };
+      }),
+    status: adminProcedure.query(async () => {
+      const { getConnectionCount, getTotalConnections } = await import("./_core/sse");
+      const { getDb } = await import("./db");
+      const db = await getDb();
+      if (!db) return { totalConnections: 0, establishments: [] };
+      const { establishments } = await import("../drizzle/schema");
+      const allEstablishments = await db.select({ id: establishments.id, name: establishments.name }).from(establishments);
+      const withConnections = allEstablishments.map(e => ({
+        id: e.id,
+        name: e.name,
+        connections: getConnectionCount(e.id),
+      }));
+      return {
+        totalConnections: getTotalConnections(),
+        establishments: withConnections.filter(e => e.connections > 0),
+        disconnected: withConnections.filter(e => e.connections === 0).length,
+      };
+    }),
+  }),
+
+});
 export type AdminRouter = typeof adminRouter;

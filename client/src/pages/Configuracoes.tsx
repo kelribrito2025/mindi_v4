@@ -403,6 +403,7 @@ export default function Configuracoes() {
 
   // SMS settings state
   const [smsEnabled, setSmsEnabled] = useState(false);
+  const [publicChatEnabled, setPublicChatEnabled] = useState(true);
 
   useEffect(() => {
     if (isWhatsappConnectedForSms && smsEnabled) {
@@ -643,6 +644,7 @@ export default function Configuracoes() {
         setNoteValidityDays(Math.min(7, Math.max(1, diffDays)));
       }
       setSmsEnabled(establishment.smsEnabled || false);
+      setPublicChatEnabled(establishment.publicChatEnabled !== false);
       setNoteStyle(establishment.noteStyle || "default");
       setMenuBackgroundHue(establishment.menuBackgroundHue ?? null);
       // Delivery time settings
@@ -1273,6 +1275,7 @@ export default function Configuracoes() {
       allowsPickup,
       allowsDineIn,
       smsEnabled,
+      publicChatEnabled,
       deliveryTimeEnabled,
       deliveryTimeMin,
       deliveryTimeMax,
@@ -3595,6 +3598,27 @@ export default function Configuracoes() {
           </SectionCard>
           ) : null}
 
+          {/* Chat do Menu Público */}
+          <SectionCard title="Chat do Menu Público" description="Permite que clientes enviem mensagens após fazer um pedido" icon={<MessageCircle className="h-5 w-5 text-violet-600 dark:text-violet-400" />} iconBg="bg-violet-100 dark:bg-violet-500/15">
+            <div className="space-y-4">
+              <div className="flex items-start gap-4 p-4 bg-muted/30 rounded-xl border border-border/30">
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold text-sm">Chat para clientes</h4>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Quando ativado, o cliente poderá enviar mensagens pelo chat após realizar um pedido no menu público.
+                      </p>
+                    </div>
+                    <Switch
+                      checked={publicChatEnabled}
+                      onCheckedChange={(checked) => { setPublicChatEnabled(checked); autoSaveField({ publicChatEnabled: checked }); }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </SectionCard>
           {/* Notificações SMS */}
           {isLitePlan ? (
             <LockedSettingsCard

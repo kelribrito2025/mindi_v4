@@ -50,6 +50,8 @@ import {
   ArrowRightLeft,
   Check,
   Scissors,
+  Bell,
+  ChevronRight,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -63,7 +65,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Tipos
-type TableStatus = "free" | "occupied" | "reserved";
+type TableStatus = "free" | "occupied" | "reserved" | "requesting_bill";
 
 interface TableSpace {
   id: number;
@@ -120,6 +122,8 @@ interface Table {
   mergedTableIds?: string | null;
   displayNumber?: string | null;
   isActive?: boolean;
+  requestingBillAt?: Date | string | null;
+  requestingBillBy?: string | null;
   tab?: Tab;
   items?: TabItem[];
 }
@@ -153,6 +157,15 @@ const getStatusConfig = (status: TableStatus) => {
         textColor: "text-blue-600",
         bgLight: "bg-blue-50",
         hoverBg: "hover:bg-blue-50",
+      };
+    case "requesting_bill":
+      return {
+        label: "Aguardando",
+        color: "bg-orange-500",
+        borderColor: "border-l-orange-500",
+        textColor: "text-orange-600",
+        bgLight: "bg-orange-50",
+        hoverBg: "hover:bg-orange-50",
       };
     default:
       return {
@@ -288,6 +301,7 @@ export default function MesasComandas() {
   const getDerivedStatus = (table: typeof tables[number]): TableStatus => {
     // Mesas desativadas são sempre "free" (cinza no visual)
     if (table.isActive === false) return "free";
+    if (table.status === "requesting_bill") return "requesting_bill";
     if (tableHasItems(table.id)) return "occupied";
     if (table.status === "reserved") return "reserved";
     return "free";
@@ -329,6 +343,8 @@ export default function MesasComandas() {
   const [transferTargetTableId, setTransferTargetTableId] = useState<number | null>(null);
   const [transferLabel, setTransferLabel] = useState(false);
   const [showTransferConfirm, setShowTransferConfirm] = useState(false);
+  // Estado para painel de mesas aguardando fechamento
+  const [showPendingPanel, setShowPendingPanel] = useState(false);
   
   // Estados para gerenciar espaços
   const [editingSpaceId, setEditingSpaceId] = useState<number | null>(null);
@@ -360,11 +376,43 @@ export default function MesasComandas() {
 
   // Buscar mesas do banco
   const { data: tables = [], isLoading, refetch } = trpc.tables.list.useQuery();
+
+  // SSE: Escutar evento table_updated para atualização em tempo real
+  useEffect(() => {
+    const es = new EventSource("/api/orders/stream", { withCredentials: true });
+    
+    es.addEventListener("table_updated", (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log("[SSE] Mesa atualizada em tempo real:", data);
+        refetch();
+      } catch (e) {
+        console.error("[SSE] Erro ao parsear table_updated:", e);
+      }
+    });
+
+    es.addEventListener("heartbeat", () => {
+      // keep-alive
+    });
+
+    es.onerror = () => {
+      // Silently handle - reconnection is automatic with EventSource
+    };
+
+    return () => {
+      es.close();
+    };
+  }, [refetch]);
   
   // Buscar espaços do banco
   const { data: spaces = [], refetch: refetchSpaces } = trpc.tableSpaces.list.useQuery();
   // Buscar percentual de taxa de serviço
   const { data: serviceChargeConfig } = trpc.tableSpaces.getServiceChargePercent.useQuery();
+  const { data: serviceChargeDestConfig } = trpc.tableSpaces.getServiceChargeDestination.useQuery();
+  const updateServiceChargeDestMutation = trpc.tableSpaces.updateServiceChargeDestination.useMutation({
+    onSuccess: () => { toast.success("Destino da taxa atualizado!"); utils.tableSpaces.getServiceChargeDestination.invalidate(); },
+    onError: (err: any) => toast.error(err.message),
+  });
   const [serviceChargeInput, setServiceChargeInput] = useState("");
   const [serviceChargeLoaded, setServiceChargeLoaded] = useState(false);
 
@@ -734,24 +782,28 @@ export default function MesasComandas() {
     let free = 0;
     let occupied = 0;
     let reserved = 0;
-    
+    let requesting_bill = 0;
     tables.forEach((t) => {
       // Ignorar mesas desativadas na contagem
       if (t.isActive === false) return;
-      // Verificar apenas itens enviados (comanda), não carrinho local
-      const tabItems = t.items?.length || 0;
-      const hasItems = tabItems > 0;
-      
-      if (hasItems) {
-        occupied++;
-      } else if (t.status === "reserved") {
-        reserved++;
+      // Ignorar mesas juntadas
+      if (t.mergedIntoId) return;
+      // Verificar status requesting_bill primeiro
+      if (t.status === "requesting_bill") {
+        requesting_bill++;
       } else {
-        free++;
+        const tabItems = t.items?.length || 0;
+        const hasItems = tabItems > 0;
+        if (hasItems) {
+          occupied++;
+        } else if (t.status === "reserved") {
+          reserved++;
+        } else {
+          free++;
+        }
       }
     });
-    
-    return { free, occupied, reserved };
+    return { free, occupied, reserved, requesting_bill };
   }, [tables]);
 
   // Filtrar mesas por espaço e status (usando status derivado)
@@ -793,7 +845,7 @@ export default function MesasComandas() {
     // Cast para Table, tratando requesting_bill como occupied
     const normalizedTable: Table = {
       ...table,
-      status: table.status === "requesting_bill" ? "occupied" : table.status as TableStatus
+      status: table.status as TableStatus
     };
     setSelectedTable(normalizedTable);
     if (isMobile) {
@@ -816,7 +868,7 @@ export default function MesasComandas() {
       if (updatedTable) {
         setSelectedTable({
           ...updatedTable,
-          status: updatedTable.status === "requesting_bill" ? "occupied" : updatedTable.status as TableStatus
+          status: updatedTable.status as TableStatus
         } as Table);
       }
     }
@@ -987,8 +1039,14 @@ export default function MesasComandas() {
   const statusLegend: { status: TableStatus; label: string; color: string }[] = [
     { status: "free", label: "Livre", color: "bg-emerald-500" },
     { status: "occupied", label: "Ocupada", color: "bg-red-500" },
+    { status: "requesting_bill", label: "Aguardando", color: "bg-orange-500" },
     { status: "reserved", label: "Reservada", color: "bg-blue-500" },
   ];
+
+  // Mesas aguardando fechamento (filtradas dos dados já carregados)
+  const pendingClosureTables = useMemo(() => {
+    return tables.filter(t => t.status === "requesting_bill" && t.isActive !== false);
+  }, [tables]);
 
   // Se não há mesas, mostrar tela de criação
   if (!isLoading && tables.length === 0) {
@@ -1271,11 +1329,31 @@ export default function MesasComandas() {
 
         </div>
 
+        {/* Barra de notificação - Mesas aguardando fechamento */}
+        {pendingClosureTables.length > 0 && (
+          <button
+            onClick={() => setShowPendingPanel(true)}
+            className="w-full flex items-center justify-between px-4 py-2.5 bg-orange-50 border border-orange-200 rounded-xl hover:bg-orange-100 transition-colors group"
+          >
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-orange-500 rounded-lg">
+                <Bell className="h-4 w-4 text-white" />
+              </div>
+              <span className="text-sm font-medium text-orange-800">
+                {pendingClosureTables.length} {pendingClosureTables.length === 1 ? 'mesa aguardando' : 'mesas aguardando'} fechamento
+              </span>
+            </div>
+            <div className="hidden sm:flex items-center gap-1 text-sm font-medium text-orange-600 group-hover:text-orange-700 transition-colors">
+              <span>Ver detalhes</span>
+              <ChevronRight className="h-4 w-4" />
+            </div>
+          </button>
+        )}
         {/* Legenda de Status + Toggle Grid/Lista */}
         <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-1.5 text-sm text-muted-foreground flex-wrap">
+        <div className="flex items-center gap-1.5 text-sm text-muted-foreground ">
           <Filter className="h-5 w-5 text-muted-foreground/70" />
-          {statusLegend.filter((item) => item.status !== 'reserved' || statusCounts.reserved > 0).map((item, index) => (
+          {statusLegend.filter((item) => (item.status !== 'reserved' || statusCounts.reserved > 0) && (item.status !== 'requesting_bill' || statusCounts.requesting_bill > 0)).map((item, index) => (
             <button
               key={item.status}
               onClick={() => handleStatusFilterClick(item.status)}
@@ -2410,6 +2488,39 @@ export default function MesasComandas() {
                   )}
                 </Button>
               </div>
+              {/* Destino da taxa de serviço */}
+              <div className="mt-3 p-3 bg-muted/30 rounded-lg">
+                <p className="text-xs font-medium text-muted-foreground mb-2">Destino da comissão</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => updateServiceChargeDestMutation.mutate({ destination: "establishment" })}
+                    className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg border transition-colors ${
+                      (serviceChargeDestConfig?.destination || "staff") === "establishment"
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background text-muted-foreground border-border hover:border-primary/50"
+                    }`}
+                    disabled={updateServiceChargeDestMutation.isPending}
+                  >
+                    Estabelecimento
+                  </button>
+                  <button
+                    onClick={() => updateServiceChargeDestMutation.mutate({ destination: "staff" })}
+                    className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg border transition-colors ${
+                      serviceChargeDestConfig?.destination === "staff"
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background text-muted-foreground border-border hover:border-primary/50"
+                    }`}
+                    disabled={updateServiceChargeDestMutation.isPending}
+                  >
+                    Garçons
+                  </button>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1.5">
+                  {(serviceChargeDestConfig?.destination || "staff") === "establishment"
+                    ? "A taxa fica como receita do estabelecimento (informativo no caixa)"
+                    : "A taxa é repassada aos garçons (deduzida do saldo do caixa)"}
+                </p>
+              </div>
             </div>
             {/* Seção: Espaços criados */}
             <div className="pt-4 border-t">
@@ -2932,6 +3043,110 @@ export default function MesasComandas() {
         </DialogContent>
       </Dialog>
 
+
+      {/* Painel lateral - Mesas aguardando fechamento */}
+      <Sheet open={showPendingPanel} onOpenChange={setShowPendingPanel}>
+        <SheetContent side="right" className="w-full sm:max-w-[400px] p-0 overflow-hidden flex flex-col h-full gap-0" hideCloseButton>
+          <SheetHeader className="sr-only">
+            <SheetTitle>Aguardando Fechamento</SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Header — gradiente laranja estilo Conferência */}
+            <div className="p-4 border-b border-border/50 bg-gradient-to-r from-orange-500 to-orange-500">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/20 rounded-lg">
+                    <Bell className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-white">Aguardando Fechamento</h2>
+                    <p className="text-sm text-white/80">{pendingClosureTables.length} {pendingClosureTables.length === 1 ? 'mesa' : 'mesas'} aguardando</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowPendingPanel(false)} className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors">
+                  <X className="h-5 w-5 text-white" />
+                </button>
+              </div>
+            </div>
+            {/* Lista de mesas */}
+            <ScrollArea className="flex-1 bg-card">
+              <div className="p-4 space-y-3">
+                {pendingClosureTables.map((table) => {
+                  const tableTotal = getTableTotal(table.id);
+                  const itemsCount = getTableItemsCount(table.id);
+                  const displayNum = table.displayNumber || String(table.number);
+                  const requestedBy = table.requestingBillBy || "Colaborador";
+                  const requestedAt = table.requestingBillAt;
+                  return (
+                    <div
+                      key={table.id}
+                      className="border border-orange-200 bg-white rounded-xl p-4 space-y-3 shadow-sm"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg font-bold text-foreground">Mesa {displayNum}</span>
+                          {table.label && (
+                            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">{table.label}</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-orange-600">
+                          <Clock className="h-3.5 w-3.5" />
+                          <span>{formatDuration(requestedAt)}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <UserRound className="h-3.5 w-3.5" />
+                          <span>{requestedBy}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Receipt className="h-3.5 w-3.5" />
+                          <span>{itemsCount} {itemsCount === 1 ? 'item' : 'itens'}</span>
+                        </div>
+                        {tableTotal > 0 && (
+                          <span className="font-semibold text-foreground">{formatCurrency(tableTotal)}</span>
+                        )}
+                      </div>
+                      <Button
+                        size="sm"
+                        className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                        onClick={() => {
+                          // Selecionar a mesa e abrir o PDVSlidebar (desktop) ou MobilePDVModal (mobile)
+                          const normalizedTable: Table = {
+                            ...table,
+                            status: table.status as TableStatus
+                          };
+                          setSelectedTable(normalizedTable);
+                          setShowPendingPanel(false);
+                          if (isMobile) {
+                            setShowMobilePDV(true);
+                          } else {
+                            setShowPDVSlidebar(true);
+                            // Abrir o modal de fechar mesa após a sidebar abrir
+                            setTimeout(() => {
+                              const event = new CustomEvent('open-close-type', { detail: { tableId: table.id } });
+                              window.dispatchEvent(event);
+                            }, 500);
+                          }
+                        }}
+                      >
+                        <Receipt className="h-4 w-4 mr-2" />
+                        Processar fechamento
+                      </Button>
+                    </div>
+                  );
+                })}
+                {pendingClosureTables.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Bell className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">Nenhuma mesa aguardando fechamento</p>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </div>
+        </SheetContent>
+      </Sheet>
       {/* Mobile PDV Modal - apenas no mobile */}
       {isMobile && (
         <MobilePDVModal
@@ -2964,7 +3179,7 @@ export default function MesasComandas() {
         tables={tables.map(t => ({
           id: t.id,
           number: t.number,
-          status: t.status === "requesting_bill" ? "occupied" : t.status,
+          status: t.status as TableStatus,
           tabId: t.tab?.id,
           tabItemsCount: t.items?.length || 0,
           displayNumber: t.displayNumber,
@@ -2975,7 +3190,7 @@ export default function MesasComandas() {
           if (fullTable) {
             setSelectedTable({
               ...fullTable,
-              status: fullTable.status === "requesting_bill" ? "occupied" : fullTable.status as TableStatus
+              status: fullTable.status as TableStatus
             } as Table);
           }
         }}

@@ -86,6 +86,16 @@ export const cashRegisterRouter = router({
       await assertEstablishmentOwnership(ctx.user.id, input.establishmentId);
       return db.cashGetSessionSales(input.establishmentId, input.sessionId);
     }),
+  // Comissões da sessão (taxa de serviço destinada aos garçons)
+  getSessionCommissions: protectedProcedure
+    .input(z.object({
+      establishmentId: z.number(),
+      sessionId: z.number(),
+    }))
+    .query(async ({ ctx, input }) => {
+      await assertEstablishmentOwnership(ctx.user.id, input.establishmentId);
+      return db.cashGetSessionCommissions(input.establishmentId, input.sessionId);
+    }),
   // Breakdown de pagamentos da sessão
   getPaymentBreakdown: protectedProcedure
     .input(z.object({
