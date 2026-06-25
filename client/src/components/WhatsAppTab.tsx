@@ -129,6 +129,7 @@ export function WhatsAppTab({ hideConnectionCard = false, activeSubTab, showOnly
       toast.success("WhatsApp Business conectado via API Oficial!");
       configQuery.refetch();
       statusQuery.refetch();
+      metaConfigQuery.refetch();
     },
     onError: (err: { message?: string }) => {
       toast.error(err.message || "Erro ao conectar via API Oficial");
@@ -380,7 +381,11 @@ export function WhatsAppTab({ hideConnectionCard = false, activeSubTab, showOnly
   const isConnected = status === 'connected';
   const isConnecting = status === 'connecting';
   const isOfficialProvider = (configQuery.data as any)?.provider === 'official';
-  const officialPhone = (configQuery.data as any)?.connectedPhone;
+  // Para API Oficial, usar connectedPhone do configQuery (que vem do DB diretamente)
+  // Para UAZAPI, usar phone do statusQuery (que vem da verificação live)
+  const officialPhone = isOfficialProvider
+    ? (configQuery.data as any)?.connectedPhone
+    : statusQuery.data?.phone || (configQuery.data as any)?.connectedPhone;
 
   return (
     <div className="space-y-6">

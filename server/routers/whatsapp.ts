@@ -249,6 +249,14 @@ export const whatsappRouter = router({
         if (!establishment) throw new TRPCError({ code: 'NOT_FOUND', message: 'Estabelecimento não encontrado' });
         
         const config = await db.getWhatsappConfig(establishment.id);
+        // Se provider é 'official', retornar status do banco diretamente (não depende de UAZAPI)
+        if (config?.provider === 'official') {
+          return {
+            success: true,
+            status: (config.status || 'disconnected') as 'connected' | 'disconnected' | 'connecting',
+            phone: config.connectedPhone || undefined,
+          };
+        }
         if (!config || !config.instanceToken) {
           return { success: false, status: 'disconnected' as const, message: 'Não configurado' };
         }
