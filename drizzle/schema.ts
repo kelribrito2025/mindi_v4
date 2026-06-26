@@ -220,6 +220,10 @@ export const categories = mysqlTable("categories", {
   availableDays: json("availableDays").$type<number[]>(), // 0=Dom, 1=Seg, 2=Ter, 3=Qua, 4=Qui, 5=Sex, 6=Sab
   availableHours: json("availableHours").$type<{ day: number; startTime: string; endTime: string }[]>(), // Horarios por dia
   isUpsell: boolean("isUpsell").default(false).notNull(),
+  // Tipo de categoria: regular (produtos normais) ou pizza (fluxo especial)
+  categoryType: mysqlEnum("categoryType", ["regular", "pizza"]).default("regular").notNull(),
+  // Regra de preço para pizza meio a meio: highest = cobra pelo sabor mais caro, average = média proporcional
+  pizzaPriceRule: mysqlEnum("pizzaPriceRule", ["highest", "average"]).default("highest"),
   // Sistema Rascunho vs Publicado
   version: mysqlEnum("version", ["draft", "published"]).default("published").notNull(),
   publishedSourceId: int("publishedSourceId"), // ID do registro publicado que originou este rascunho
@@ -2316,3 +2320,65 @@ export const sseConnectivityLogs = mysqlTable("sse_connectivity_logs", {
 ]);
 export type SseConnectivityLog = typeof sseConnectivityLogs.$inferSelect;
 export type InsertSseConnectivityLog = typeof sseConnectivityLogs.$inferInsert;
+
+// Pizza sizes - tamanhos de pizza por categoria
+export const pizzaSizes = mysqlTable("pizzaSizes", {
+  id: int("id").autoincrement().primaryKey(),
+  categoryId: int("categoryId").notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
+  slices: int("slices").default(1).notNull(), // Quantidade de pedaços
+  maxFlavors: int("maxFlavors").default(1).notNull(), // Quantidade máxima de sabores
+  imageUrl: text("imageUrl"),
+  pdvCode: varchar("pdvCode", { length: 50 }),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  // Sistema Rascunho vs Publicado
+  version: mysqlEnum("version", ["draft", "published"]).default("draft").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  index("idx_pizzaSizes_categoryId").on(table.categoryId),
+  index("idx_pizzaSizes_version").on(table.version),
+]);
+export type PizzaSize = typeof pizzaSizes.$inferSelect;
+export type InsertPizzaSize = typeof pizzaSizes.$inferInsert;
+
+// Pizza crusts - tipos de massa por categoria
+export const pizzaCrusts = mysqlTable("pizzaCrusts", {
+  id: int("id").autoincrement().primaryKey(),
+  categoryId: int("categoryId").notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
+  price: decimal("price", { precision: 10, scale: 2 }).default("0").notNull(),
+  pdvCode: varchar("pdvCode", { length: 50 }),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  // Sistema Rascunho vs Publicado
+  version: mysqlEnum("version", ["draft", "published"]).default("draft").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  index("idx_pizzaCrusts_categoryId").on(table.categoryId),
+  index("idx_pizzaCrusts_version").on(table.version),
+]);
+export type PizzaCrust = typeof pizzaCrusts.$inferSelect;
+export type InsertPizzaCrust = typeof pizzaCrusts.$inferInsert;
+
+// Pizza edges/borders - tipos de borda por categoria
+export const pizzaEdges = mysqlTable("pizzaEdges", {
+  id: int("id").autoincrement().primaryKey(),
+  categoryId: int("categoryId").notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
+  price: decimal("price", { precision: 10, scale: 2 }).default("0").notNull(),
+  pdvCode: varchar("pdvCode", { length: 50 }),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  // Sistema Rascunho vs Publicado
+  version: mysqlEnum("version", ["draft", "published"]).default("draft").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  index("idx_pizzaEdges_categoryId").on(table.categoryId),
+  index("idx_pizzaEdges_version").on(table.version),
+]);
+export type PizzaEdge = typeof pizzaEdges.$inferSelect;
+export type InsertPizzaEdge = typeof pizzaEdges.$inferInsert;

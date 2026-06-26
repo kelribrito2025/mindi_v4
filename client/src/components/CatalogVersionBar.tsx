@@ -346,40 +346,57 @@ export default function CatalogVersionBar({
       </div>
 
       {/* Publish Dialog */}
-      <AlertDialog open={publishDialogOpen} onOpenChange={setPublishDialogOpen}>
-        <AlertDialogContent className="sm:max-w-md max-sm:fixed max-sm:bottom-0 max-sm:left-0 max-sm:right-0 max-sm:top-auto max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-b-none max-sm:rounded-t-[28px] max-sm:w-full max-sm:max-w-full max-sm:border-0 max-sm:p-6" style={{ borderRadius: '16px' }}>
-          <AlertDialogHeader>
-            <div className="flex items-center gap-3 mb-1">
-              <div className="p-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/50">
-                <Upload className="h-5 w-5 text-emerald-600" />
+      <Dialog open={publishDialogOpen} onOpenChange={setPublishDialogOpen}>
+        <DialogContent className="sm:max-w-[414px] p-0 overflow-hidden border-0 bg-white [&>button]:hidden max-sm:fixed max-sm:bottom-0 max-sm:left-0 max-sm:right-0 max-sm:top-auto max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-b-none max-sm:rounded-t-[28px] max-sm:w-full max-sm:max-w-full sm:rounded-[28px]" style={{ boxShadow: '0 20px 60px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.03)' }} overlayClassName="bg-black/20 backdrop-blur-sm">
+          <DialogTitle className="sr-only">Publicar cardápio</DialogTitle>
+          <div className="p-6">
+            {/* Header */}
+            <div className="flex items-center gap-3 pb-4 border-b border-gray-100 dark:border-border mb-4">
+              <div className="relative shrink-0">
+                <div className="absolute inset-0 rounded-full bg-red-100 opacity-40 scale-125" />
+                <div className="relative w-[42px] h-[42px] border-2 border-red-400 rounded-full flex items-center justify-center bg-white shadow-sm">
+                  <Upload className="h-5 w-5 text-red-500" strokeWidth={2.5} />
+                </div>
               </div>
-              <AlertDialogTitle className="text-lg">Publicar cardápio?</AlertDialogTitle>
+              <div>
+                <h3 className="text-[15px] font-bold text-foreground">Publicar cardápio?</h3>
+                <p className="text-[11px] text-muted-foreground">O cardápio público será atualizado com as alterações do rascunho.</p>
+              </div>
             </div>
-            <AlertDialogDescription className="text-sm leading-relaxed">
-              O cardápio público será atualizado com as alterações do rascunho. Clientes verão as mudanças imediatamente.
-              {stats && (
-                <span className="block mt-2 text-xs text-muted-foreground">
-                  Serão publicados: {stats.draft.categories} categorias e {stats.draft.products} produtos
-                </span>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2 sm:gap-2">
-            <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => publishMutation.mutate({ establishmentId })}
-              className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white"
-              disabled={isPublishing}
-            >
-              {isPublishing ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Publicando...</>
-              ) : (
-                <><Upload className="h-4 w-4 mr-2" /> Publicar agora</>
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            {/* Info */}
+            <p className="text-[13px] text-gray-600 dark:text-muted-foreground mb-2">Clientes verão as mudanças imediatamente.</p>
+            {stats && (
+              <div className="flex items-center gap-2.5 rounded-[14px] p-3.5 mb-4" style={{ background: 'linear-gradient(135deg, #fef2f2, #fef9f0)' }}>
+                <div className="w-7 h-7 bg-white dark:bg-background rounded-lg flex items-center justify-center shadow-sm shrink-0">
+                  <Upload className="h-3.5 w-3.5 text-red-500" />
+                </div>
+                <span className="text-xs font-medium text-gray-700 dark:text-foreground">Serão publicados: {stats.draft.categories} categorias e {stats.draft.products} produtos</span>
+              </div>
+            )}
+            {/* Actions */}
+            <div className="flex gap-2.5">
+              <Button
+                variant="outline"
+                className="flex-1 rounded-[20px] h-11 text-[13px] font-semibold border-gray-200 dark:border-border"
+                onClick={() => setPublishDialogOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                className="flex-1 rounded-[20px] h-11 text-[13px] font-semibold bg-red-500 hover:bg-red-600 text-white gap-1.5"
+                onClick={() => { publishMutation.mutate({ establishmentId }); setPublishDialogOpen(false); }}
+                disabled={isPublishing}
+              >
+                {isPublishing ? (
+                  <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Publicando...</>
+                ) : (
+                  <>Publicar agora <Upload className="h-3.5 w-3.5" /></>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Publish Success Modal */}
       <Dialog open={publishSuccessOpen} onOpenChange={(open) => { setPublishSuccessOpen(open); if (!open) setLinkCopied(false); }}>

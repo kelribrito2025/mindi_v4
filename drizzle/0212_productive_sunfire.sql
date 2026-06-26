@@ -1,0 +1,2 @@
+ALTER TABLE `cashMovements` MODIFY COLUMN `type` enum('sangria','suprimento','comissao') NOT NULL;--> statement-breakpoint
+ALTER TABLE `establishments` ADD `serviceChargeDestination` enum('establishment','staff') DEFAULT 'establishment' NOT NULL;

@@ -107,6 +107,9 @@ import { Label } from "@/components/ui/label";
 import InlineComplementsDropdown from "@/components/InlineComplementsDropdown";
 import CatalogVersionBar from "@/components/CatalogVersionBar";
 import CategorySidebarCard from "@/components/CategorySidebarCard";
+import ProductTypeSelector from "@/components/ProductTypeSelector";
+import CreatePizzaCategorySheet from "@/components/CreatePizzaCategorySheet";
+import PizzaCategoryContent from "@/components/PizzaCategoryContent";
 
 // Sortable Product Item Component
 const SortableProductItem = React.memo(function SortableProductItem({
@@ -1034,6 +1037,9 @@ export default function Catalogo() {
   const [comboSheetOpen, setComboSheetOpen] = useState(false);
   const [productSheetOpen, setProductSheetOpen] = useState(false);
   const [productSheetDefaultCategoryId, setProductSheetDefaultCategoryId] = useState<number | undefined>(undefined);
+  // Product type selector state
+  const [productTypeSelectorOpen, setProductTypeSelectorOpen] = useState(false);
+  const [pizzaCategorySheetOpen, setPizzaCategorySheetOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState<number | undefined>(undefined);
   const [comboSheetCategoryId, setComboSheetCategoryId] = useState<number>(0);
   const [comboSheetCategoryName, setComboSheetCategoryName] = useState("");
@@ -1920,7 +1926,7 @@ export default function Catalogo() {
             catalogVersion !== 'published' ? (
             <div className="flex items-center gap-2">
               {hasCategories ? (
-                <button onClick={() => setProductSheetOpen(true)} className="hidden md:flex px-4 py-2 text-sm font-medium rounded-lg transition-colors bg-red-500 text-white hover:bg-red-500 items-center gap-1.5">
+                <button onClick={() => setProductTypeSelectorOpen(true)} className="hidden md:flex px-4 py-2 text-sm font-medium rounded-lg transition-colors bg-red-500 text-white hover:bg-red-500 items-center gap-1.5">
                   <span className="text-xs sm:text-sm">Novo produto</span>
                 </button>
               ) : (
@@ -2173,7 +2179,7 @@ export default function Catalogo() {
                 </Button>
                 <Button
                   size="icon"
-                  onClick={() => setProductSheetOpen(true)}
+                  onClick={() => setProductTypeSelectorOpen(true)}
                   className="h-10 w-10 rounded-xl flex-shrink-0"
                   style={{ backgroundColor: '#ef4444', color: 'white' }}
                 >
@@ -2294,39 +2300,45 @@ export default function Catalogo() {
                 duplicateCategoryPending={duplicateCategoryMutation.isPending}
                 isReadOnly={catalogVersion === 'published'}
               >
-                <SortableContext
-                  items={categoryProducts.map((p) => p.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <div className="divide-y divide-border/50">
-                    {categoryProducts.map((product) => (
-                      <SortableProductItem
-                        key={product.id}
-                        product={product}
-                        isDragDisabled={hasActiveFilters}
-                        onToggleStatus={handleToggleStatus}
-                        onDuplicate={handleDuplicate}
-                        onDelete={(id) => {
-                          setProductToDelete(id);
-                          setDeleteDialogOpen(true);
-                        }}
-                        onEdit={(id) => {
-                          setEditingProductId(id);
-                          setProductSheetOpen(true);
-                        }}
-                        formatCurrency={formatCurrency}
-                        expandedComplementProductId={expandedComplementProductId}
-                        onToggleComplements={handleToggleComplements}
-                        onUpdateInline={handleInlineUpdate}
-                        establishmentId={establishmentId || undefined}
-                        menuSlug={establishment?.menuSlug ?? undefined}
-                        categoryIsActive={category.isActive}
-                        onOpenPromo={handleOpenPromo}
-                        isReadOnly={catalogVersion === 'published'}
-                      />
-                    ))}
+                {category.categoryType === "pizza" ? (
+                  <div className="p-4">
+                    <PizzaCategoryContent categoryId={category.id} isReadOnly={catalogVersion === 'published'} />
                   </div>
-                </SortableContext>
+                ) : (
+                  <SortableContext
+                    items={categoryProducts.map((p) => p.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="divide-y divide-border/50">
+                      {categoryProducts.map((product) => (
+                        <SortableProductItem
+                          key={product.id}
+                          product={product}
+                          isDragDisabled={hasActiveFilters}
+                          onToggleStatus={handleToggleStatus}
+                          onDuplicate={handleDuplicate}
+                          onDelete={(id) => {
+                            setProductToDelete(id);
+                            setDeleteDialogOpen(true);
+                          }}
+                          onEdit={(id) => {
+                            setEditingProductId(id);
+                            setProductSheetOpen(true);
+                          }}
+                          formatCurrency={formatCurrency}
+                          expandedComplementProductId={expandedComplementProductId}
+                          onToggleComplements={handleToggleComplements}
+                          onUpdateInline={handleInlineUpdate}
+                          establishmentId={establishmentId || undefined}
+                          menuSlug={establishment?.menuSlug ?? undefined}
+                          categoryIsActive={category.isActive}
+                          onOpenPromo={handleOpenPromo}
+                          isReadOnly={catalogVersion === 'published'}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                )}
               </SortableCategoryItem>
             );
           })}
@@ -2555,6 +2567,31 @@ export default function Catalogo() {
             deleteMutation.mutate({ id });
             setProductSheetOpen(false);
             setEditingProductId(undefined);
+          }}
+        />
+      )}
+      {/* Product Type Selector */}
+      <ProductTypeSelector
+        open={productTypeSelectorOpen}
+        onOpenChange={setProductTypeSelectorOpen}
+        onSelect={(type) => {
+          setProductTypeSelectorOpen(false);
+          if (type === "preparado") {
+            setProductSheetOpen(true);
+          } else if (type === "pizza") {
+            setPizzaCategorySheetOpen(true);
+          }
+        }}
+      />
+      {/* Create Pizza Category Sheet */}
+      {establishmentId && (
+        <CreatePizzaCategorySheet
+          open={pizzaCategorySheetOpen}
+          onOpenChange={setPizzaCategorySheetOpen}
+          establishmentId={establishmentId}
+          onSuccess={() => {
+            catalogoUtils.category.list.invalidate();
+            catalogoUtils.catalogVersion.stats.invalidate();
           }}
         />
       )}
@@ -2943,35 +2980,49 @@ export default function Catalogo() {
       </Sheet>
 
       {/* Mobile Publish Confirmation Dialog */}
-      <AlertDialog open={mobilePublishDialogOpen} onOpenChange={setMobilePublishDialogOpen}>
-        <AlertDialogContent className="sm:max-w-md max-sm:fixed max-sm:bottom-0 max-sm:left-0 max-sm:right-0 max-sm:top-auto max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-b-none max-sm:rounded-t-[28px] max-sm:w-full max-sm:max-w-full max-sm:border-0 max-sm:p-6" style={{ borderRadius: '16px' }}>
-          <AlertDialogHeader>
-            <div className="flex items-center gap-3 mb-1">
-              <div className="p-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/50">
-                <Upload className="h-5 w-5 text-emerald-600" />
+      <Dialog open={mobilePublishDialogOpen} onOpenChange={setMobilePublishDialogOpen}>
+        <DialogContent className="sm:max-w-[414px] p-0 overflow-hidden border-0 bg-white [&>button]:hidden max-sm:fixed max-sm:bottom-0 max-sm:left-0 max-sm:right-0 max-sm:top-auto max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-b-none max-sm:rounded-t-[28px] max-sm:w-full max-sm:max-w-full sm:rounded-[28px]" style={{ boxShadow: '0 20px 60px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.03)' }} overlayClassName="bg-black/20 backdrop-blur-sm">
+          <DialogTitle className="sr-only">Publicar cardápio</DialogTitle>
+          <div className="p-6">
+            {/* Header */}
+            <div className="flex items-center gap-3 pb-4 border-b border-gray-100 dark:border-border mb-4">
+              <div className="relative shrink-0">
+                <div className="absolute inset-0 rounded-full bg-red-100 opacity-40 scale-125" />
+                <div className="relative w-[42px] h-[42px] border-2 border-red-400 rounded-full flex items-center justify-center bg-white shadow-sm">
+                  <Upload className="h-5 w-5 text-red-500" strokeWidth={2.5} />
+                </div>
               </div>
-              <AlertDialogTitle className="text-lg">Publicar cardápio?</AlertDialogTitle>
+              <div>
+                <h3 className="text-[15px] font-bold text-foreground">Publicar cardápio?</h3>
+                <p className="text-[11px] text-muted-foreground">O cardápio público será atualizado com as alterações do rascunho.</p>
+              </div>
             </div>
-            <AlertDialogDescription className="text-sm leading-relaxed">
-              O cardápio público será atualizado com as alterações do rascunho. Clientes verão as mudanças imediatamente.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2 sm:gap-2">
-            <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => establishmentId && mobilePublishMutation.mutate({ establishmentId })}
-              className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white"
-              disabled={mobilePublishMutation.isPending}
-            >
-              {mobilePublishMutation.isPending ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Publicando...</>
-              ) : (
-                <><Upload className="h-4 w-4 mr-2" /> Publicar agora</>
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            {/* Info */}
+            <p className="text-[13px] text-gray-600 dark:text-muted-foreground mb-4">Clientes verão as mudanças imediatamente.</p>
+            {/* Actions */}
+            <div className="flex gap-2.5">
+              <Button
+                variant="outline"
+                className="flex-1 rounded-[20px] h-11 text-[13px] font-semibold border-gray-200 dark:border-border"
+                onClick={() => setMobilePublishDialogOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                className="flex-1 rounded-[20px] h-11 text-[13px] font-semibold bg-red-500 hover:bg-red-600 text-white gap-1.5"
+                onClick={() => { establishmentId && mobilePublishMutation.mutate({ establishmentId }); setMobilePublishDialogOpen(false); }}
+                disabled={mobilePublishMutation.isPending}
+              >
+                {mobilePublishMutation.isPending ? (
+                  <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Publicando...</>
+                ) : (
+                  <>Publicar agora <Upload className="h-3.5 w-3.5" /></>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
 
       {/* Mobile Publish Success Modal - Bottom Sheet */}

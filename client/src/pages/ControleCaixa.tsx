@@ -510,7 +510,7 @@ export default function ControleCaixa() {
   }, [movements]);
   const fundoInicial = parseFloat(currentSession?.openingAmount as any) || 0;
   const totalComissoes = commissionsData?.total ?? 0;
-  const isCommissionForStaff = serviceChargeDestConfig?.destination !== "establishment";
+  const isCommissionForStaff = serviceChargeDestConfig?.destination !== "establishment" && parseFloat(establishment?.serviceChargePercent as any || "0") > 0;
   const saldoAtual = fundoInicial + totalVendas - totalSangrias + totalSuprimentos - (isCommissionForStaff ? totalComissoes : 0);
 
   // Vendas em dinheiro (para saldo esperado na gaveta)

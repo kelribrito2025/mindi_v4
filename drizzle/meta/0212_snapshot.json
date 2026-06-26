@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "2072808f-e689-4120-a996-76cc6ed32dd9",
+  "id": "807d1714-a662-43fb-9f9c-16583cde4c5d",
   "prevId": "27c71060-e9e6-47e9-b060-c1d9c0de29d0",
   "tables": {
     "admin_audit_log": {
@@ -533,7 +533,7 @@
         },
         "type": {
           "name": "type",
-          "type": "enum('sangria','suprimento')",
+          "type": "enum('sangria','suprimento','comissao')",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -3813,6 +3813,14 @@
           "notNull": true,
           "autoincrement": false,
           "default": "'0'"
+        },
+        "serviceChargeDestination": {
+          "name": "serviceChargeDestination",
+          "type": "enum('establishment','staff')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'establishment'"
         },
         "updatedAt": {
           "name": "updatedAt",
@@ -9823,95 +9831,6 @@
       "compositePrimaryKeys": {
         "sms_transactions_id": {
           "name": "sms_transactions_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraint": {}
-    },
-    "sse_connectivity_logs": {
-      "name": "sse_connectivity_logs",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": true
-        },
-        "establishment_id": {
-          "name": "establishment_id",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "event": {
-          "name": "event",
-          "type": "enum('disconnected','order_missed','reconnected')",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "message": {
-          "name": "message",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "order_id": {
-          "name": "order_id",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "details": {
-          "name": "details",
-          "type": "json",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(now())"
-        }
-      },
-      "indexes": {
-        "idx_sseConnLogs_establishment": {
-          "name": "idx_sseConnLogs_establishment",
-          "columns": [
-            "establishment_id"
-          ],
-          "isUnique": false
-        },
-        "idx_sseConnLogs_event": {
-          "name": "idx_sseConnLogs_event",
-          "columns": [
-            "event"
-          ],
-          "isUnique": false
-        },
-        "idx_sseConnLogs_createdAt": {
-          "name": "idx_sseConnLogs_createdAt",
-          "columns": [
-            "created_at"
-          ],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "sse_connectivity_logs_id": {
-          "name": "sse_connectivity_logs_id",
           "columns": [
             "id"
           ]

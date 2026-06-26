@@ -166,4 +166,160 @@ export const categoryRouter = router({
             : undefined
         };
       }),
-  });
+    createPizzaCategory: protectedProcedure
+      .input(z.object({
+        establishmentId: z.number(),
+        name: z.string().min(1),
+        priceRule: z.enum(["highest", "average"]),
+        isActive: z.boolean(),
+        sizes: z.array(z.object({
+          name: z.string().min(1),
+          slices: z.number().min(1),
+          maxFlavors: z.number().min(1).max(4),
+          imageUrl: z.string().nullable(),
+          pdvCode: z.string().nullable(),
+          isActive: z.boolean(),
+        })),
+        crusts: z.array(z.object({
+          name: z.string().min(1),
+          price: z.string(),
+          pdvCode: z.string().nullable(),
+          isActive: z.boolean(),
+        })),
+        edges: z.array(z.object({
+          name: z.string().min(1),
+          price: z.string(),
+          pdvCode: z.string().nullable(),
+          isActive: z.boolean(),
+        })),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await assertEstablishmentOwnership(ctx.user.id, input.establishmentId);
+        await assertCanCreateCategory(input.establishmentId);
+        const categoryId = await db.createPizzaCategory(input);
+        return { id: categoryId };
+      }),
+  
+    getPizzaConfig: protectedProcedure
+      .input(z.object({ categoryId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const config = await db.getPizzaConfigByCategory(input.categoryId);
+        return config;
+      }),
+
+    updatePizzaSize: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().optional(),
+        slices: z.number().optional(),
+        maxFlavors: z.number().optional(),
+        price: z.string().optional(),
+        pdvCode: z.string().nullable().optional(),
+        isActive: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { id, ...data } = input;
+        await db.updatePizzaSize(id, data);
+        return { success: true };
+      }),
+
+    addPizzaSize: protectedProcedure
+      .input(z.object({
+        categoryId: z.number(),
+        establishmentId: z.number().optional(),
+        name: z.string().min(1),
+        slices: z.number(),
+        maxFlavors: z.number(),
+        price: z.string(),
+        pdvCode: z.string().nullable(),
+        isActive: z.boolean(),
+        sortOrder: z.number(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Get establishmentId from category if not provided
+        let establishmentId = input.establishmentId;
+        if (!establishmentId) {
+          const cat = await db.getCategoryById(input.categoryId);
+          establishmentId = cat?.establishmentId || 1;
+        }
+        await db.addPizzaSize({ ...input, establishmentId });
+        return { success: true };
+      }),
+
+    deletePizzaSize: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await db.deletePizzaSize(input.id);
+        return { success: true };
+      }),
+
+    updatePizzaCrust: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().optional(),
+        price: z.string().optional(),
+        pdvCode: z.string().nullable().optional(),
+        isActive: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { id, ...data } = input;
+        await db.updatePizzaCrust(id, data);
+        return { success: true };
+      }),
+
+    addPizzaCrust: protectedProcedure
+      .input(z.object({
+        categoryId: z.number(),
+        name: z.string().min(1),
+        price: z.string(),
+        pdvCode: z.string().nullable(),
+        isActive: z.boolean(),
+        sortOrder: z.number(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await db.addPizzaCrust(input);
+        return { success: true };
+      }),
+
+    deletePizzaCrust: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await db.deletePizzaCrust(input.id);
+        return { success: true };
+      }),
+
+    updatePizzaEdge: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().optional(),
+        price: z.string().optional(),
+        pdvCode: z.string().nullable().optional(),
+        isActive: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { id, ...data } = input;
+        await db.updatePizzaEdge(id, data);
+        return { success: true };
+      }),
+
+    addPizzaEdge: protectedProcedure
+      .input(z.object({
+        categoryId: z.number(),
+        name: z.string().min(1),
+        price: z.string(),
+        pdvCode: z.string().nullable(),
+        isActive: z.boolean(),
+        sortOrder: z.number(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await db.addPizzaEdge(input);
+        return { success: true };
+      }),
+
+    deletePizzaEdge: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await db.deletePizzaEdge(input.id);
+        return { success: true };
+      }),
+});

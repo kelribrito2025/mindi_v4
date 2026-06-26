@@ -90,7 +90,10 @@ import {
   linkedSuggestionItems, InsertLinkedSuggestionItem, LinkedSuggestionItem,
   userPreferences, InsertUserPreference, UserPreference,
   onboardingDrafts, InsertOnboardingDraft, OnboardingDraft,
-  ifoodDisputes, InsertIfoodDispute, IfoodDispute
+  ifoodDisputes, InsertIfoodDispute, IfoodDispute,
+  pizzaSizes, InsertPizzaSize, PizzaSize,
+  pizzaCrusts, InsertPizzaCrust, PizzaCrust,
+  pizzaEdges, InsertPizzaEdge, PizzaEdge
 } from "../drizzle/schema";
 import { logger } from "./_core/logger";
 import { ENV } from "./_core/env";
@@ -1367,6 +1370,131 @@ export async function createCategory(data: InsertCategory) {
   return result[0].insertId;
 }
 
+
+export async function createPizzaCategory(input: {
+  establishmentId: number;
+  name: string;
+  priceRule: "highest" | "average";
+  isActive: boolean;
+  sizes: { name: string; slices: number; maxFlavors: number; imageUrl: string | null; pdvCode: string | null; isActive: boolean }[];
+  crusts: { name: string; price: string; pdvCode: string | null; isActive: boolean }[];
+  edges: { name: string; price: string; pdvCode: string | null; isActive: boolean }[];
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Get next sort order for category
+  const existing = await db.select({ sortOrder: categories.sortOrder })
+    .from(categories)
+    .where(and(eq(categories.establishmentId, input.establishmentId), eq(categories.version, "draft")))
+    .orderBy(desc(categories.sortOrder))
+    .limit(1);
+  const newSortOrder = existing.length > 0 ? existing[0].sortOrder + 1 : 0;
+  
+  // Create category with type pizza
+  const catResult = await db.insert(categories).values({
+    establishmentId: input.establishmentId,
+    name: input.name,
+    isActive: input.isActive,
+    categoryType: "pizza",
+    pizzaPriceRule: input.priceRule,
+    version: "draft",
+    sortOrder: newSortOrder,
+  });
+  const categoryId = catResult[0].insertId;
+  
+  // For each size, create a PRODUCT and its complement groups (Sabores, Massa, Borda)
+  for (let sIdx = 0; sIdx < input.sizes.length; sIdx++) {
+    const size = input.sizes[sIdx];
+    
+    // Create product for this size (e.g. "Média", "Grande")
+    const prodResult = await db.insert(products).values({
+      establishmentId: input.establishmentId,
+      categoryId: categoryId,
+      name: size.name,
+      description: `${size.slices} pedaços • Até ${size.maxFlavors} sabor${size.maxFlavors > 1 ? 'es' : ''}`,
+      price: "0.00",
+      images: size.imageUrl ? [size.imageUrl] : null,
+      status: size.isActive ? "active" : "paused",
+      sortOrder: sIdx,
+      version: "draft",
+    });
+    const productId = prodResult[0].insertId;
+    
+    // Create complement group "Sabores" for this product
+    const saboresGroupResult = await db.insert(complementGroups).values({
+      productId: productId,
+      name: "Sabores",
+      minQuantity: 1,
+      maxQuantity: size.maxFlavors,
+      isRequired: true,
+      groupType: "complement",
+      isActive: true,
+      sortOrder: 0,
+      version: "draft",
+    });
+    
+    // Create complement group "Massa" for this product (if crusts defined)
+    if (input.crusts.length > 0) {
+      const massaGroupResult = await db.insert(complementGroups).values({
+        productId: productId,
+        name: "Massa",
+        minQuantity: 1,
+        maxQuantity: 1,
+        isRequired: true,
+        groupType: "complement",
+        isActive: true,
+        sortOrder: 1,
+        version: "draft",
+      });
+      const massaGroupId = massaGroupResult[0].insertId;
+      
+      // Insert crust items
+      for (let cIdx = 0; cIdx < input.crusts.length; cIdx++) {
+        const crust = input.crusts[cIdx];
+        await db.insert(complementItems).values({
+          groupId: massaGroupId,
+          name: crust.name,
+          price: crust.price,
+          isActive: crust.isActive,
+          sortOrder: cIdx,
+          version: "draft",
+        });
+      }
+    }
+    
+    // Create complement group "Borda" for this product (if edges defined)
+    if (input.edges.length > 0) {
+      const bordaGroupResult = await db.insert(complementGroups).values({
+        productId: productId,
+        name: "Borda",
+        minQuantity: 0,
+        maxQuantity: 1,
+        isRequired: false,
+        groupType: "complement",
+        isActive: true,
+        sortOrder: 2,
+        version: "draft",
+      });
+      const bordaGroupId = bordaGroupResult[0].insertId;
+      
+      // Insert edge items
+      for (let eIdx = 0; eIdx < input.edges.length; eIdx++) {
+        const edge = input.edges[eIdx];
+        await db.insert(complementItems).values({
+          groupId: bordaGroupId,
+          name: edge.name,
+          price: edge.price,
+          isActive: edge.isActive,
+          sortOrder: eIdx,
+          version: "draft",
+        });
+      }
+    }
+  }
+  
+  return categoryId;
+}
 export async function updateCategory(id: number, data: Partial<InsertCategory>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -19617,18 +19745,36 @@ export async function getCustomerDetailsTab(establishmentId: number) {
 
   const preferredHour = hourResult.length > 0 ? `${String(Number(hourResult[0].hour)).padStart(2, '0')}:00` : null;
 
+  const dayLabelsShort = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
   return {
     ticketMedio,
-    peakDay,
-    topProduct,
-    frequentCustomers,
-    preferences: {
-      preferredDay,
-      preferredHour,
-      weeklyDistribution: weeklyPct,
+    diaMaisPedem: peakDay,
+    itemMaisPedido: topProduct,
+    clientesFrequentes: frequentCustomers.map(c => ({
+      name: c.name,
+      phone: c.phone,
+      ordersPerWeek: c.orderCount / 4,
+      totalOrders: c.orderCount,
+    })),
+    preferencias: {
+      diaPreferido: preferredDay,
+      horarioPreferido: preferredHour,
+      distribuicaoSemanal: weeklyPct.map((pct, idx) => ({ dia: dayLabelsShort[idx], percent: pct })),
     },
   };
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 // ===== Requesting Bill Helpers =====
 export async function setRequestingBillInfo(tableId: number, requestedBy: string) {
@@ -19683,4 +19829,327 @@ export async function cashGetSessionCommissions(establishmentId: number, session
     .orderBy(desc(cashMovements.createdAt));
   const total = result.reduce((acc, m) => acc + (parseFloat(m.amount) || 0), 0);
   return { commissions: result, total, count: result.length };
+}
+
+
+// === Pizza Config Queries ===
+export async function getPizzaConfigByCategory(categoryId: number) {
+  const db = await getDb();
+  if (!db) return { sizes: [], crusts: [], edges: [] };
+  // Get all products (sizes) for this pizza category
+  const sizeProducts = await db.select().from(products)
+    .where(and(eq(products.categoryId, categoryId), eq(products.version, "draft")))
+    .orderBy(asc(products.sortOrder));
+  // For crusts and edges, get from the first product's complement groups
+  let crusts: any[] = [];
+  let edges: any[] = [];
+  if (sizeProducts.length > 0) {
+    const firstProductId = sizeProducts[0].id;
+    const groups = await db.select().from(complementGroups)
+      .where(and(eq(complementGroups.productId, firstProductId), eq(complementGroups.version, "draft")))
+      .orderBy(asc(complementGroups.sortOrder));
+    for (const group of groups) {
+      if (group.name === "Massa") {
+        const items = await db.select().from(complementItems)
+          .where(and(eq(complementItems.groupId, group.id), eq(complementItems.version, "draft")))
+          .orderBy(asc(complementItems.sortOrder));
+        crusts = items.map(item => ({
+          id: item.id,
+          groupId: group.id,
+          name: item.name,
+          price: item.price,
+          isActive: item.isActive,
+          sortOrder: item.sortOrder,
+        }));
+      } else if (group.name === "Borda") {
+        const items = await db.select().from(complementItems)
+          .where(and(eq(complementItems.groupId, group.id), eq(complementItems.version, "draft")))
+          .orderBy(asc(complementItems.sortOrder));
+        edges = items.map(item => ({
+          id: item.id,
+          groupId: group.id,
+          name: item.name,
+          price: item.price,
+          isActive: item.isActive,
+          sortOrder: item.sortOrder,
+        }));
+      }
+    }
+  }
+  // Parse sizes from products + their Sabores group
+  const sizes = await Promise.all(sizeProducts.map(async (product) => {
+    const groups = await db.select().from(complementGroups)
+      .where(and(eq(complementGroups.productId, product.id), eq(complementGroups.version, "draft")))
+      .orderBy(asc(complementGroups.sortOrder));
+    const saboresGroup = groups.find(g => g.name === "Sabores");
+    // Parse slices and maxFlavors from description "X pedaços • Até Y sabores"
+    let slices = 8;
+    let maxFlavors = 2;
+    if (product.description) {
+      const slicesMatch = product.description.match(/(\d+)\s*pedaço/);
+      if (slicesMatch) slices = parseInt(slicesMatch[1]);
+      const flavorsMatch = product.description.match(/Até\s*(\d+)\s*sabor/);
+      if (flavorsMatch) maxFlavors = parseInt(flavorsMatch[1]);
+    }
+    return {
+      id: product.id,
+      name: product.name,
+      slices,
+      maxFlavors: saboresGroup ? saboresGroup.maxQuantity : maxFlavors,
+      price: product.price,
+      imageUrl: product.images && product.images.length > 0 ? product.images[0] : null,
+      isActive: product.status === "active",
+      sortOrder: product.sortOrder,
+      saboresGroupId: saboresGroup?.id || null,
+      saboresCount: 0, // Will be filled if needed
+    };
+  }));
+  return { sizes, crusts, edges };
+}
+// Keep old functions as stubs for backward compatibility (they use old tables)
+export async function getPizzaSizesByCategory(categoryId: number) {
+  const config = await getPizzaConfigByCategory(categoryId);
+  return config.sizes;
+}
+export async function getPizzaCrustsByCategory(categoryId: number) {
+  const config = await getPizzaConfigByCategory(categoryId);
+  return config.crusts;
+}
+export async function getPizzaEdgesByCategory(categoryId: number) {
+  const config = await getPizzaConfigByCategory(categoryId);
+  return config.edges;
+}
+
+export async function updatePizzaSize(id: number, data: any) {
+  // id is now a product ID - update the product directly
+  const db = await getDb();
+  if (!db) return;
+  const updateData: any = {};
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.isActive !== undefined) updateData.status = data.isActive ? "active" : "paused";
+  if (data.slices !== undefined || data.maxFlavors !== undefined) {
+    // Need to update description and possibly Sabores group maxQuantity
+    const product = await db.select().from(products).where(eq(products.id, id)).limit(1);
+    if (product.length > 0) {
+      const currentDesc = product[0].description || "";
+      let slices = data.slices;
+      let maxFlavors = data.maxFlavors;
+      if (slices === undefined) {
+        const m = currentDesc.match(/(\d+)\s*pedaço/);
+        slices = m ? parseInt(m[1]) : 8;
+      }
+      if (maxFlavors === undefined) {
+        const m = currentDesc.match(/Até\s*(\d+)\s*sabor/);
+        maxFlavors = m ? parseInt(m[1]) : 2;
+      }
+      updateData.description = `${slices} pedaços • Até ${maxFlavors} sabor${maxFlavors > 1 ? 'es' : ''}`;
+      // Update Sabores group maxQuantity if maxFlavors changed
+      if (data.maxFlavors !== undefined) {
+        const groups = await db.select().from(complementGroups)
+          .where(and(eq(complementGroups.productId, id), eq(complementGroups.name, "Sabores")));
+        if (groups.length > 0) {
+          await db.update(complementGroups).set({ maxQuantity: data.maxFlavors }).where(eq(complementGroups.id, groups[0].id));
+        }
+      }
+    }
+  }
+  if (Object.keys(updateData).length > 0) {
+    await db.update(products).set(updateData).where(eq(products.id, id));
+  }
+}
+export async function updatePizzaCrust(id: number, data: any) {
+  // id is now a complementItem ID
+  const db = await getDb();
+  if (!db) return;
+  const updateData: any = {};
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.price !== undefined) updateData.price = data.price;
+  if (data.isActive !== undefined) updateData.isActive = data.isActive;
+  if (Object.keys(updateData).length > 0) {
+    await db.update(complementItems).set(updateData).where(eq(complementItems.id, id));
+  }
+}
+export async function updatePizzaEdge(id: number, data: any) {
+  // id is now a complementItem ID
+  const db = await getDb();
+  if (!db) return;
+  const updateData: any = {};
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.price !== undefined) updateData.price = data.price;
+  if (data.isActive !== undefined) updateData.isActive = data.isActive;
+  if (Object.keys(updateData).length > 0) {
+    await db.update(complementItems).set(updateData).where(eq(complementItems.id, id));
+  }
+}
+export async function addPizzaSize(data: any) {
+  // Create a new product in the pizza category + complement groups
+  const db = await getDb();
+  if (!db) return;
+  const prodResult = await db.insert(products).values({
+    establishmentId: data.establishmentId || 1,
+    categoryId: data.categoryId,
+    name: data.name || "Novo Tamanho",
+    description: `${data.slices || 8} pedaços • Até ${data.maxFlavors || 2} sabor${(data.maxFlavors || 2) > 1 ? 'es' : ''}`,
+    price: data.price || "0.00",
+    status: data.isActive ? "active" : "paused",
+    sortOrder: data.sortOrder || 0,
+    version: "draft",
+  });
+  const productId = prodResult[0].insertId;
+  // Create Sabores group
+  await db.insert(complementGroups).values({
+    productId,
+    name: "Sabores",
+    minQuantity: 1,
+    maxQuantity: data.maxFlavors || 2,
+    isRequired: true,
+    groupType: "complement",
+    isActive: true,
+    sortOrder: 0,
+    version: "draft",
+  });
+  // Copy Massa and Borda groups from sibling products in same category
+  if (data.categoryId) {
+    const siblings = await db.select().from(products)
+      .where(and(eq(products.categoryId, data.categoryId), eq(products.version, "draft"), sql`${products.id} != ${productId}`))
+      .limit(1);
+    if (siblings.length > 0) {
+      const siblingGroups = await db.select().from(complementGroups)
+        .where(and(eq(complementGroups.productId, siblings[0].id), eq(complementGroups.version, "draft")));
+      for (const group of siblingGroups) {
+        if (group.name === "Massa" || group.name === "Borda") {
+          const newGroupResult = await db.insert(complementGroups).values({
+            productId,
+            name: group.name,
+            minQuantity: group.minQuantity,
+            maxQuantity: group.maxQuantity,
+            isRequired: group.isRequired,
+            groupType: group.groupType,
+            isActive: group.isActive,
+            sortOrder: group.sortOrder,
+            version: "draft",
+          });
+          const newGroupId = newGroupResult[0].insertId;
+          // Copy items from sibling group
+          const items = await db.select().from(complementItems)
+            .where(and(eq(complementItems.groupId, group.id), eq(complementItems.version, "draft")));
+          for (const item of items) {
+            await db.insert(complementItems).values({
+              groupId: newGroupId,
+              name: item.name,
+              price: item.price,
+              isActive: item.isActive,
+              sortOrder: item.sortOrder,
+              version: "draft",
+            });
+          }
+        }
+      }
+    }
+  }
+}
+export async function addPizzaCrust(data: any) {
+  // Add a crust item to ALL products in the pizza category
+  const db = await getDb();
+  if (!db) return;
+  const categoryProducts = await db.select().from(products)
+    .where(and(eq(products.categoryId, data.categoryId), eq(products.version, "draft")));
+  for (const product of categoryProducts) {
+    const groups = await db.select().from(complementGroups)
+      .where(and(eq(complementGroups.productId, product.id), eq(complementGroups.name, "Massa"), eq(complementGroups.version, "draft")));
+    let groupId: number;
+    if (groups.length > 0) {
+      groupId = groups[0].id;
+    } else {
+      // Create Massa group if it doesn't exist
+      const result = await db.insert(complementGroups).values({
+        productId: product.id,
+        name: "Massa",
+        minQuantity: 1,
+        maxQuantity: 1,
+        isRequired: true,
+        groupType: "complement",
+        isActive: true,
+        sortOrder: 1,
+        version: "draft",
+      });
+      groupId = result[0].insertId;
+    }
+    await db.insert(complementItems).values({
+      groupId,
+      name: data.name || "Nova Massa",
+      price: data.price || "0.00",
+      isActive: data.isActive !== undefined ? data.isActive : true,
+      sortOrder: data.sortOrder || 0,
+      version: "draft",
+    });
+  }
+}
+export async function addPizzaEdge(data: any) {
+  // Add an edge item to ALL products in the pizza category
+  const db = await getDb();
+  if (!db) return;
+  const categoryProducts = await db.select().from(products)
+    .where(and(eq(products.categoryId, data.categoryId), eq(products.version, "draft")));
+  for (const product of categoryProducts) {
+    const groups = await db.select().from(complementGroups)
+      .where(and(eq(complementGroups.productId, product.id), eq(complementGroups.name, "Borda"), eq(complementGroups.version, "draft")));
+    let groupId: number;
+    if (groups.length > 0) {
+      groupId = groups[0].id;
+    } else {
+      // Create Borda group if it doesn't exist
+      const result = await db.insert(complementGroups).values({
+        productId: product.id,
+        name: "Borda",
+        minQuantity: 0,
+        maxQuantity: 1,
+        isRequired: false,
+        groupType: "complement",
+        isActive: true,
+        sortOrder: 2,
+        version: "draft",
+      });
+      groupId = result[0].insertId;
+    }
+    await db.insert(complementItems).values({
+      groupId,
+      name: data.name || "Nova Borda",
+      price: data.price || "0.00",
+      isActive: data.isActive !== undefined ? data.isActive : true,
+      sortOrder: data.sortOrder || 0,
+      version: "draft",
+    });
+  }
+}
+export async function deletePizzaSize(id: number) {
+  // id is a product ID - delete product and its complement groups/items
+  const db = await getDb();
+  if (!db) return;
+  // Delete complement items for all groups of this product
+  const groups = await db.select().from(complementGroups)
+    .where(eq(complementGroups.productId, id));
+  for (const group of groups) {
+    await db.delete(complementItems).where(eq(complementItems.groupId, group.id));
+  }
+  // Delete complement groups
+  await db.delete(complementGroups).where(eq(complementGroups.productId, id));
+  // Delete product
+  await db.delete(products).where(eq(products.id, id));
+}
+export async function deletePizzaCrust(id: number) {
+  // id is a complementItem ID - delete from all products in same category
+  const db = await getDb();
+  if (!db) return;
+  // Get the item to find its name
+  const [item] = await db.select().from(complementItems).where(eq(complementItems.id, id));
+  if (!item) return;
+  // Just delete this specific item
+  await db.delete(complementItems).where(eq(complementItems.id, id));
+}
+export async function deletePizzaEdge(id: number) {
+  // id is a complementItem ID
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(complementItems).where(eq(complementItems.id, id));
 }

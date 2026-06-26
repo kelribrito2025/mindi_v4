@@ -112,92 +112,6 @@ function createUazapiProvider(instanceToken: string): WhatsAppProvider {
 // ─── Official API provider ────────────────────────────────────────────────────
 
 // Mapeia status internos para nomes de template aprovados no Meta Business Manager
-
-/**
- * Builds template components array matching the approved Meta templates.
- * Each template has different parameters.
- */
-function buildTemplateComponents(status: OrderStatus, data: {
-  customerName: string;
-  orderNumber: string;
-  establishmentName: string;
-  cancellationReason?: string | null;
-  orderItems?: Array<{ productName: string; quantity: number; unitPrice: string; totalPrice: string; complements?: string | null; notes?: string | null; }>;
-  orderTotal?: string | null;
-}): object[] {
-  switch (status) {
-    case 'new':
-      // mindi_order_new: {{1}}=cliente, {{2}}=pedido, {{3}}=loja, {{4}}=itens, {{5}}=total
-      const itemsText = (data.orderItems ?? [])
-        .map(item => `${item.quantity}x ${item.productName}`)
-        .join('\n') || 'Sem itens';
-      return [{
-        type: 'body',
-        parameters: [
-          { type: 'text', text: data.customerName },
-          { type: 'text', text: data.orderNumber },
-          { type: 'text', text: data.establishmentName },
-          { type: 'text', text: itemsText },
-          { type: 'text', text: data.orderTotal ?? 'R$ 0,00' },
-        ],
-      }];
-    case 'preparing':
-      // mindi_order_preparing: {{1}}=pedido
-      return [{
-        type: 'body',
-        parameters: [
-          { type: 'text', text: data.orderNumber },
-        ],
-      }];
-    case 'ready':
-      // mindi_order_ready_delivery: {{1}}=cliente, {{2}}=pedido
-      return [{
-        type: 'body',
-        parameters: [
-          { type: 'text', text: data.customerName },
-          { type: 'text', text: data.orderNumber },
-        ],
-      }];
-    case 'out_for_delivery':
-      // mindi_order_out_for_delivery: {{1}}=cliente, {{2}}=pedido
-      return [{
-        type: 'body',
-        parameters: [
-          { type: 'text', text: data.customerName },
-          { type: 'text', text: data.orderNumber },
-        ],
-      }];
-    case 'completed':
-      // mindi_order_completed: {{1}}=pedido, {{2}}=loja
-      return [{
-        type: 'body',
-        parameters: [
-          { type: 'text', text: data.orderNumber },
-          { type: 'text', text: data.establishmentName },
-        ],
-      }];
-    case 'cancelled':
-      // mindi_order_cancelled: {{1}}=cliente, {{2}}=pedido, {{3}}=motivo
-      return [{
-        type: 'body',
-        parameters: [
-          { type: 'text', text: data.customerName },
-          { type: 'text', text: data.orderNumber },
-          { type: 'text', text: data.cancellationReason || 'Não informado' },
-        ],
-      }];
-    default:
-      return [{
-        type: 'body',
-        parameters: [
-          { type: 'text', text: data.customerName },
-          { type: 'text', text: data.orderNumber },
-          { type: 'text', text: data.establishmentName },
-        ],
-      }];
-  }
-}
-
 const STATUS_TO_TEMPLATE: Record<OrderStatus, string> = {
   new: 'mindi_order_new',
   preparing: 'mindi_order_preparing',
@@ -254,8 +168,18 @@ function createOfficialProvider(config: OfficialConfig): WhatsAppProvider {
         return { success: false };
       }
 
-      // Template components: build parameters per approved Meta template
-      const components = buildTemplateComponents(status, data);
+      // Template components: body parameters map to {{1}}, {{2}}, {{3}}
+      const components = [
+        {
+          type: 'body',
+          parameters: [
+            { type: 'text', text: data.customerName },
+            { type: 'text', text: data.orderNumber },
+            { type: 'text', text: data.establishmentName },
+          ],
+        },
+      ];
+
       const tplResult = await sendTemplateMessage(config, phone, templateName, components);
       return { success: tplResult.success };
     },

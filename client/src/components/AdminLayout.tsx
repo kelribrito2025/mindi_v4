@@ -94,6 +94,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
 import { toast } from "sonner";
 import { TrialExpiredModal } from "@/components/TrialExpiredModal";
 import { FeedbackModal } from "@/components/FeedbackModal";
@@ -708,7 +709,6 @@ export const HREF_TO_PERMISSION: Record<string, string> = {
   '/mesas': 'mesas',
   '/cozinha': 'cozinha',
   '/pedidos': 'pedidos',
-  '/pedidos/historico': 'pedidos',
   '/agendados': 'pedidos',
   '/clientes': 'clientes',
   '/entregadores': 'entregadores',
@@ -1724,10 +1724,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                       // Quando colapsado, abrir popover flutuante com os filhos
                       return (
                         <div key={item.href}>
-                          <Popover>
+                          <HoverCard openDelay={100} closeDelay={300}>
                             <Tooltip delayDuration={0}>
                               <TooltipTrigger asChild>
-                                <PopoverTrigger asChild>
+                                <HoverCardTrigger asChild>
                                   <div
                                     className={cn(parentClassName, "cursor-pointer")}
                                   >
@@ -1740,13 +1740,13 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                                       )}
                                     </div>
                                   </div>
-                                </PopoverTrigger>
+                                </HoverCardTrigger>
                               </TooltipTrigger>
                               <TooltipContent side="right" className="font-medium">
                                 {item.label}
                               </TooltipContent>
                             </Tooltip>
-                            <PopoverContent side="right" align="start" className="w-max min-w-[11rem] p-1.5 rounded-xl shadow-lg border border-border/50" sideOffset={8}>
+                            <HoverCardContent side="right" align="start" className="w-max min-w-[11rem] p-1.5 rounded-xl shadow-lg border border-border/50" sideOffset={8}>
                               <div className="space-y-0.5">
                                 {/* Parent item as first entry (only if it has a navigable href and is not duplicated by a child) */}
                                 {item.href && !item.href.endsWith('-parent') && !visibleChildren.some((child: any) => child.href === item.href) && (() => {
@@ -1855,8 +1855,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                                   );
                                 })}
                               </div>
-                            </PopoverContent>
-                          </Popover>
+                            </HoverCardContent>
+                          </HoverCard>
                         </div>
                       );
                     }
